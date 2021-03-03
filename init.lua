@@ -296,10 +296,12 @@ end
 --  * Settings table
 function obj.loadSettings()
     obj.log.d("> loadSettings")
-    local settings = settings.get("TilingWindowManager")
     local settingsInt = {}
-    for spaceID, setting in pairs(settings) do
-        settingsInt[tonumber(spaceID)] = setting
+    local settings = settings.get("TilingWindowManager")
+    if settings then 
+        for spaceID, setting in pairs(settings) do
+            settingsInt[tonumber(spaceID)] = setting
+        end
     end
     obj.log.d("< loadSettings ->", inspect.inspect(settingsInt))
     return settingsInt
