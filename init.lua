@@ -401,9 +401,12 @@ end
 --  * None
 function obj.setTilingModeCurrentSpace(tilingMode)
     obj.log.d("> setTilingModeCurrentSpace", tilingMode)
-    -- TODO check if tilingMode is allowed
-    local currentSpaceID = spaces.activeSpace()
-    obj.spaces[currentSpaceID].tilingMode = tilingMode
+    if fnutils.contains(obj.enabledTilingModes, tilingMode) then
+        local currentSpaceID = spaces.activeSpace()
+        obj.spaces[currentSpaceID].tilingMode = tilingMode
+    else
+        obj.log.d("Tiling mode not enabled:", tilingMode)
+    end
 
     if obj.displayMode then obj.displayTilingMode() end
     
@@ -517,7 +520,7 @@ end
 
 -- Move focus and swap windows --------------------------------------
 
---- TilingWindowManager.focusNext()
+--- TilingWindowManager.focusNext() -> nil
 --- Function
 --- Change window focus to next window in tileable windows.
 --- Wraps around if current window is last window.
@@ -543,7 +546,7 @@ function obj.focusNext()
     obj.log.d("< focusNext")
 end
 
---- TilingWindowManager.focusPrev()
+--- TilingWindowManager.focusPrev() -> nil
 --- Function
 --- Change window focus to previous window in tileable windows.
 --- Wraps around if current window is first window.
@@ -569,7 +572,7 @@ function obj.focusPrev()
     obj.log.d("< focusPrev")
 end
 
---- TilingWindowManager.swapNext()
+--- TilingWindowManager.swapNext() -> nil
 --- Function
 --- Swaps window order and position with next window in tileable windows.
 --- Wraps around if current window is last window, then current window 
@@ -597,7 +600,7 @@ function obj.swapNext()
     obj.log.d("< swapNext")
 end
 
---- TilingWindowManager.swapPrev()
+--- TilingWindowManager.swapPrev() -> nil
 --- Function
 --- Swaps window order and position with previous window in tileable 
 --- windows. Wraps around if current window is first window, then 
@@ -625,7 +628,7 @@ function obj.swapPrev()
     obj.log.d("< swapPrev")
 end
 
---- TilingWindowManager.swapFirst()
+--- TilingWindowManager.swapFirst() -> nil
 --- Function
 --- 
 --- If current window is first window:
@@ -660,7 +663,7 @@ function obj.swapFirst()
     obj.log.d("< swapFirst")
 end
 
---- TilingWindowManager.toggleFirst()
+--- TilingWindowManager.toggleFirst() -> nil
 --- Function
 --- 
 --- If current window is first window:
@@ -783,7 +786,7 @@ function obj.updateMenu()
     obj.log.d("< updateMenu")
 end
 
---- TilingWindowManager.displayTilingMode()
+--- TilingWindowManager.displayTilingMode() -> nil
 --- Function
 --- Shows an alert displaying the current spaces current tiling mode.
 ---
@@ -799,7 +802,7 @@ end
 
 -- Spoon methods ----------------------------------------------------
 
---- TilingWindowManager:bindHotkeys(mapping)
+--- TilingWindowManager:bindHotkeys(mapping) -> self
 --- Method
 --- Binds hotkeys for TilingWindowManager
 ---
@@ -860,7 +863,7 @@ function obj:init()
     return self
 end
 
---- TilingWindowManager:start()
+--- TilingWindowManager:start([config]) -> self
 --- Method
 --- Starts TilingWindowManager spoon
 ---
@@ -870,7 +873,8 @@ end
 ---    These keys are recognized:
 ---   * dynamic - if true: dynamically tile windows.
 ---   * tilingModes - a table with all tiling modes to be enabled.
----   * fullscreenRightApps - a table with app names to TODO
+---   * fullscreenRightApps - a table with app names, to position
+---     right half only in fullscreen mode
 ---   * floatApp - a table with app names to always float.
 ---   * displayMode - if true: show mode when switching tiling mode.
 ---   * menubar - if true: enable menubar item.
@@ -923,7 +927,7 @@ function obj:start(config)
     return self
 end
 
---- TilingWindowManager:stop()
+--- TilingWindowManager:stop() -> self
 --- Method
 --- Stops TilingWindowManager spoon
 ---
@@ -948,7 +952,7 @@ function obj:stop()
     return self
 end
 
---- TilingWindowManager:setLogLevel()
+--- TilingWindowManager:setLogLevel(level) -> self
 --- Method
 --- Set the log level of the spoon logger.
 ---
