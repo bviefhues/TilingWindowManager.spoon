@@ -361,8 +361,8 @@ end
 --  * text - written to console to identify output
 --  * windows - a table of `hs.windows` objects.
 --
---  Returns:
---   * None
+-- Returns:
+--  * None
 function obj.logWindows(text, windows)
     obj.log.d(text)
     if windows then
@@ -477,7 +477,7 @@ function obj.tileableWindowsCurrentSpace()
 
     obj.spaces[currentSpaceID].tilingWindows = tilingWindows
 
-    logWindows("Tileable Windows: ", tilingWindows)
+    --obj.logWindows("Tileable Windows: ", tilingWindows)
     obj.log.d("< tileableWindowsCurrentSpace", "(...)")
     return tilingWindows
 end
@@ -510,8 +510,8 @@ end
 -- Parameters:
 --  * None
 --
---  Returns:
---   * None
+-- Returns:
+--  * None
 function obj.switchedToSpace(number)
     obj.log.d("> switchedToSpace", number)
     obj.tileCurrentSpace() -- in case window configuration has changed
@@ -522,77 +522,55 @@ end
 
 -- Move focus and swap windows --------------------------------------
 
---- TilingWindowManager.focusNext() -> nil
+--- TilingWindowManager.focusRelative(relativeIndex) -> nil
 --- Function
---- Change window focus to next window in tileable windows.
---- Wraps around if current window is last window.
+--- Change window focus. Newly focussed window is determined by relative 
+--- distance `relativeIndex` from current window in orderedtileable 
+--- windows table.  Wraps around if current window is first or last window.
 ---
 --- Parameters:
----  * None
+---  * relativeIndex - positive moves focus next, negative moves
+---    focus previous.
 ---
----  Returns:
----   * None
-function obj.focusNext()
-    obj.log.d("> focusNext")
+--- Returns:
+---  * None
+function obj.focusRelative(relativeIndex)
+    obj.log.d("> focusRelative", relativeIndex)
     local windows = obj.tileableWindowsCurrentSpace()
     if #windows > 1 then
         i = fnutils.indexOf(windows, window.focusedWindow()) 
         if i then
-            local j = i + 1
-            if i == #windows then j = 1 end
+            -- offset the table starting with 1 index for modulo
+            local j = (i - 1 + relativeIndex) % #windows + 1
             windows[j]:focus():raise()
         else
             obj.log.d("Window is floating")
         end
     end
-    obj.log.d("< focusNext")
+    obj.log.d("< focusRelative")
 end
 
---- TilingWindowManager.focusPrev() -> nil
+--- TilingWindowManager.moveRelative(relativeIndex) -> nil
 --- Function
---- Change window focus to previous window in tileable windows.
---- Wraps around if current window is first window.
+--- Moves window to different position in table of tileable windows.
+--- Wraps around if current window is first or last window. 
+---
+--- Tiles the current space.
 ---
 --- Parameters:
----  * None
+---  * relativeIndex - positive moves window next, negative moves
+---    window previous.
 ---
 --- Returns:
 ---  * None
-function obj.focusPrev()
-    obj.log.d("> focusPrev")
+function obj.moveRelative(relativeIndex)
+    obj.log.d("> moveRelative", relativeIndex)
     local windows = obj.tileableWindowsCurrentSpace()
     if #windows > 1 then
         i = fnutils.indexOf(windows, window.focusedWindow()) 
         if i then
-            local j = i - 1
-            if i == 1 then j = #windows end
-            windows[j]:focus():raise()
-        else
-            obj.log.d("Window is floating")
-        end
-    end
-    obj.log.d("< focusPrev")
-end
-
---- TilingWindowManager.swapNext() -> nil
---- Function
---- Swaps window order and position with next window in tileable windows.
---- Wraps around if current window is last window, then current window 
---- becomes first window. Tiles the current space.
----
---- Parameters:
----  * None
----
---- Returns:
----  * None
-function obj.swapNext()
-    obj.log.d("> swapNext")
-    local windows = obj.tileableWindowsCurrentSpace()
-    if #windows > 1 then
-        i = fnutils.indexOf(windows, window.focusedWindow()) 
-        if i then
-            local j = i + 1
-            if i == #windows then j = 1 end
+            -- offset the table starting with 1 index for modulo
+            local j = (i - 1 + relativeIndex) % #windows + 1
             windows[i], windows[j] = windows[j], windows[i]
             obj.tileCurrentSpace(windows)
         else
@@ -600,34 +578,6 @@ function obj.swapNext()
         end
     end
     obj.log.d("< swapNext")
-end
-
---- TilingWindowManager.swapPrev() -> nil
---- Function
---- Swaps window order and position with previous window in tileable 
---- windows. Wraps around if current window is first window, then 
---- current window  becomes last window. Tiles the current space.
----
---- Parameters:
----  * None
----
---- Returns:
----  * None
-function obj.swapPrev()
-    obj.log.d("> swapPrev")
-    local windows = obj.tileableWindowsCurrentSpace()
-    if #windows > 1 then
-        i = fnutils.indexOf(windows, window.focusedWindow()) 
-        if i then
-            local j = i - 1
-            if i == 1 then j = #windows end
-            windows[i], windows[j] = windows[j], windows[i]
-            obj.tileCurrentSpace(windows)
-        else
-            obj.log.d("Window is floating")
-        end
-    end
-    obj.log.d("< swapPrev")
 end
 
 --- TilingWindowManager.swapFirst() -> nil
@@ -673,7 +623,7 @@ end
 ---
 --- If current window is not first window:
 --- Makes current window the first window. Previous first window becomes
---- the second window..
+--- the second window.
 ---
 --- Tiles the current space.
 ---
@@ -830,10 +780,10 @@ function obj:bindHotkeys(mapping)
     obj.log.d("> bindHotkeys", inspect(mapping))
     local def = {
         tile = obj.tileCurrentSpace,
-        focusNext = obj.focusNext,
-        focusPrev = obj.focusPrev,
-        swapNext = obj.swapNext,
-        swapPrev = obj.swapPrev,
+        focusNext = function() obj.focusRelative(1) end,
+        focusPrev = function() obj.focusRelative(-1) end,
+        swapNext = function() obj.moveRelative(1) end,
+        swapPrev = function() obj.moveRelative(-1) end,
         swapFirst = obj.swapFirst,
         toggleFirst = obj.toggleFirst,
         float = function()
