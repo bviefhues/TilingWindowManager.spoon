@@ -52,35 +52,35 @@ obj.spacesWatcher = nil
 -- notified on macOS window changes.
 obj.windowFilter = nil
 
---- TilingWindowManager.tilingMode
+--- TilingWindowManager.layouts
 --- Variable
---- A table holding all known tiling modes. Maps keys to descriptive 
+--- A table holding all known tiling layouts. Maps keys to descriptive 
 --- strings. The strings show up in the user interface.
 ---
---- The following tiling modes are defined as Keys:
----  * TilingWindowManager.tilingMode.floating
----  * TilingWindowManager.tilingMode.fullscreen
----  * TilingWindowManager.tilingMode.tall
----  * TilingWindowManager.tilingMode.wide
-obj.tilingMode = {
+--- The following tiling layouts are defined as Keys:
+---  * TilingWindowManager.layouts.floating
+---  * TilingWindowManager.layouts.fullscreen
+---  * TilingWindowManager.layouts.tall
+---  * TilingWindowManager.layouts.wide
+obj.layouts = {
     floating = "Floating",
     fullscreen = "Fullscreen",
     tall = "Tall",
     wide = "Wide",
 }
 
---- TilingWindowManager.enabledTilingModes
+--- TilingWindowManager.enabledLayouts
 --- Variable
---- A table holding all enabled tiling modes.
+--- A table holding all enabled tiling layouts.
 ---
 --- Notes:
 --- Can be set as a config option in the spoons `start()` method.
-obj.enabledTilingModes = {obj.tilingMode.floating} 
+obj.enabledLayouts = {obj.layouts.floating} 
 
 --- TilingWindowManager.fullscreenRightApps
 --- Variable
 --- A table holding names of applications which shall be positioned
---- on right half of screen only for fullscreen mode.
+--- on right half of screen only for fullscreen layout.
 ---
 --- Notes:
 --- Can be set as a config option in the spoons `start()` method.
@@ -95,34 +95,34 @@ obj.fullscreenRightApps = {}
 --- Can be set as a config option in the spoons `start()` method.
 obj.floatApps = {}
 
---- TilingWindowManager.displayMode
+--- TilingWindowManager.displayLayoutOnLayoutChange
 --- Variable
---- If true: show `hs.alert()` with mode name when changing mode.
+--- If true: show `hs.alert()` with layout name when changing layout.
 ---
 --- Notes:
 --- Can be set as a config option in the spoons `start()` method.
-obj.displayMode = false
+obj.displayLayoutOnLayoutChange = false
 
 
 -- Tiling strategy --------------------------------------------------
 
 --- TilingWindowManager.tilingStrategy
 --- Variable
---- A table holding everything necessary for each tiling mode.
+--- A table holding everything necessary for each layout.
 --- 
---- The table key is a tiling mode, as per 
---- `TilingWindowManager.tilingMode`.
+--- The table key is a tiling layout, as per 
+--- `TilingWindowManager.layouts`.
 --- 
---- The table value for each tiling mode is a table with these keys:
+--- The table value for each layout is a table with these keys:
 ---  * tile(windows) - a function to move windows in place.
----  * symbol - a string formatted as ASCII image, the tiling modes icon.
+---  * symbol - a string formatted as ASCII image, the layouts icon.
 obj.tilingStrategy = {}
 
-obj.tilingStrategy[obj.tilingMode.floating] = {
+obj.tilingStrategy[obj.layouts.floating] = {
     tile = function(windows)
-        obj.log.d("> tileLayout", obj.tilingMode.floating)
+        obj.log.d("> tileLayout", obj.layouts.floating)
         -- do nothing 
-        obj.log.d("< tileLayout", obj.tilingMode.floating)
+        obj.log.d("< tileLayout", obj.layouts.floating)
     end,
 
     symbol = [[ASCII:
@@ -144,9 +144,9 @@ obj.tilingStrategy[obj.tilingMode.floating] = {
 ]],
 }
 
-obj.tilingStrategy[obj.tilingMode.fullscreen] = {
+obj.tilingStrategy[obj.layouts.fullscreen] = {
     tile = function(windows)
-        obj.log.d("> tileLayout", obj.tilingMode.fullscreen)
+        obj.log.d("> tileLayout", obj.layouts.fullscreen)
         for i, window in ipairs(windows) do
             local frame = window:screen():frame()
             appTitle = window:application():title()
@@ -158,7 +158,7 @@ obj.tilingStrategy[obj.tilingMode.fullscreen] = {
             end
             window:setFrame(frame)
         end
-        obj.log.d("< tileLayout", obj.tilingMode.fullscreen)
+        obj.log.d("< tileLayout", obj.layouts.fullscreen)
     end,
 
     symbol = [[ASCII:
@@ -180,11 +180,11 @@ obj.tilingStrategy[obj.tilingMode.fullscreen] = {
 ]],
 }
 
-obj.tilingStrategy[obj.tilingMode.tall] = {
+obj.tilingStrategy[obj.layouts.tall] = {
     tile = function(windows)
-        obj.log.d("> tile", obj.tilingMode.tall)
+        obj.log.d("> tile", obj.layouts.tall)
         if #windows == 1 then
-            obj.tilingStrategy[obj.tilingMode.fullscreen].tile(windows)
+            obj.tilingStrategy[obj.layouts.fullscreen].tile(windows)
         else
             for i, window in ipairs(windows) do
                 local frame = window:screen():frame()
@@ -201,7 +201,7 @@ obj.tilingStrategy[obj.tilingMode.tall] = {
                 window:setFrame(frame)
             end
         end
-        obj.log.d("< tile", obj.tilingMode.tall)
+        obj.log.d("< tile", obj.layouts.tall)
     end,
 
     symbol = [[ASCII:
@@ -223,11 +223,11 @@ obj.tilingStrategy[obj.tilingMode.tall] = {
 ]],
 }
 
-obj.tilingStrategy[obj.tilingMode.wide] = {
+obj.tilingStrategy[obj.layouts.wide] = {
     tile = function(windows)
-        obj.log.d("> tile", obj.tilingMode.wide)
+        obj.log.d("> tile", obj.layouts.wide)
         if #windows == 1 then
-            obj.tilingStrategy[obj.tilingMode.fullscreen].tile(windows)
+            obj.tilingStrategy[obj.layouts.fullscreen].tile(windows)
         else
             for i, window in ipairs(windows) do
                 local frame = window:screen():frame()
@@ -244,7 +244,7 @@ obj.tilingStrategy[obj.tilingMode.wide] = {
                 window:setFrame(frame)
             end
         end
-        obj.log.d("< tile", obj.tilingMode.wide)
+        obj.log.d("< tile", obj.layouts.wide)
     end,
 
     symbol = [[ASCII:
@@ -280,7 +280,7 @@ function obj.saveSettings()
     obj.log.d("> saveSettings")
     tileSettings = {}
     for spaceID, spaceData in pairs(obj.spaces) do
-        tileSettings[tostring(spaceID)] = spaceData.tilingMode
+        tileSettings[tostring(spaceID)] = spaceData.layout
     end
     obj.log.d(inspect(tileSettings))
     settings.set("TilingWindowManager", tileSettings)
@@ -316,7 +316,7 @@ end
 --  * Table with default data structure
 function obj.initSpace()
     local space = {}
-    space.tilingMode = obj.enabledTilingModes[1]
+    space.layout = obj.enabledLayouts[1]
     space.tilingWindows = {}
     return space
 end
@@ -340,9 +340,9 @@ function obj.initSpaces()
     for space_number, space_id in ipairs(spaces.layout()[screen]) do
         local space = obj.initSpace()
         if settings and settings[space_id] then
-            tilingMode = settings[space_id]
-            if fnutils.contains(obj.enabledTilingModes, tilingMode) then
-                space.tilingMode = tilingMode
+            layout = settings[space_id]
+            if fnutils.contains(obj.enabledLayouts, layout) then
+                space.layout = layout
             end
         end
         obj.spaces[space_id] = space
@@ -379,40 +379,40 @@ function obj.logWindows(text, windows)
     end
 end
 
--- Internal: Gets the tiling mode of the current macOS space
+-- Internal: Gets the tiling layout of the current macOS space
 --
 -- Parameters:
 --  * None
 --
 -- Returns:
---  * the tiling mode string
-function obj.tilingModeCurrentSpace()
-    obj.log.d("> tilingModeCurrentSpace")
+--  * the layout string
+function obj.layoutCurrentSpace()
+    obj.log.d("> layoutCurrentSpace")
     local currentSpaceID = spaces.activeSpace()
-    local tilingMode = obj.spaces[currentSpaceID].tilingMode
-    obj.log.d("< tilingModeCurrentSpace", tilingMode)
-    return tilingMode
+    local layout = obj.spaces[currentSpaceID].layout
+    obj.log.d("< layoutCurrentSpace", layout)
+    return layout
 end
 
--- Internal: Sets the tiling mode of the current space.
+-- Internal: Sets the tiling layout of the current space.
 -- 
 -- Parameters:
---  * tilingMode - String as per `obj.enabledTilingModes`
+--  * layout - String as per `obj.enabledLayouts`
 --
 -- Returns:
 --  * None
-function obj.setTilingModeCurrentSpace(tilingMode)
-    obj.log.d("> setTilingModeCurrentSpace", tilingMode)
-    if fnutils.contains(obj.enabledTilingModes, tilingMode) then
+function obj.setLayoutCurrentSpace(layout)
+    obj.log.d("> setLayoutCurrentSpace", layout)
+    if fnutils.contains(obj.enabledLayouts, layout) then
         local currentSpaceID = spaces.activeSpace()
-        obj.spaces[currentSpaceID].tilingMode = tilingMode
+        obj.spaces[currentSpaceID].layout = layout
     else
-        obj.log.d("Tiling mode not enabled:", tilingMode)
+        obj.log.d("Tiling layout not enabled:", layout)
     end
 
-    if obj.displayMode then obj.displayTilingMode() end
+    if obj.displayLayoutOnLayoutChange then obj.displayLayout() end
     
-    obj.log.d("> setTilingModeCurrentSpace")
+    obj.log.d("> setLayoutCurrentSpace")
 end
 
 -- Internal: Returns an ordered table of all tileable windows for the
@@ -483,7 +483,7 @@ function obj.tileableWindowsCurrentSpace()
 end
 
 -- Internal: tiles the current macOS space, i.e. re-arranges windows
--- according to the selected tiling mode for that space.
+-- according to the selected layout for that space.
 --
 -- Parameters:
 --  * windows - a table of windows to tile, this is optional to help
@@ -500,7 +500,7 @@ function obj.tileCurrentSpace(windows)
     obj.log.d("> tileCurrentSpace", hs.inspect(windows))
     --obj.logWindows("Windows:", windows)
     windows = windows or obj.tileableWindowsCurrentSpace()
-    obj.tilingStrategy[obj.tilingModeCurrentSpace()].tile(windows)
+    obj.tilingStrategy[obj.layoutCurrentSpace()].tile(windows)
     obj.log.d("< tileCurrentSpace")
 end
 
@@ -705,7 +705,7 @@ end
 -- Menu bar ---------------------------------------------------------
 
 -- Internal: Callback for hs.menubar, is triggered when
--- user selects a tiling mode in menu bar, tiles space and updates menu.
+-- user selects a layout in menu bar, tiles space and updates menu.
 --
 -- Parameters:
 --  * modifiers - koyboard modifiers
@@ -713,14 +713,14 @@ end
 --
 -- Returns:
 --  * None
-function obj.switchTilingMode(modifiers, menuItem)
-    obj.log.d("> switchTilingMode", 
+function obj.switchLayout(modifiers, menuItem)
+    obj.log.d("> switchLayout", 
         inspect(modifiers), inspect(menuItem))
-    obj.setTilingModeCurrentSpace(menuItem.title)
+    obj.setLayoutCurrentSpace(menuItem.title)
     obj.tileCurrentSpace()
     obj.updateMenu()
     obj.saveSettings()
-    obj.log.d("< switchTilingMode")
+    obj.log.d("< switchLayout")
 end
 
 -- Internal: Helper function to convert an ASCII image to an icon.
@@ -749,22 +749,22 @@ end
 --  * menu table
 function obj.menuTable()
     obj.log.d("> menuTable")
-    local tilingModeCurrentSpace = obj.tilingModeCurrentSpace() 
+    local layoutCurrentSpace = obj.layoutCurrentSpace() 
     local menuTable = {}
-    for i, tilingMode in ipairs(obj.enabledTilingModes) do
-        local mode = {}
-        mode.title = tilingMode
-        if not obj.tilingStrategy[tilingMode].icon then
+    for i, layout in ipairs(obj.enabledLayouts) do
+        local layout = {}
+        layout.title = layout
+        if not obj.tilingStrategy[layout].icon then
             -- cache icons
-            obj.tilingStrategy[tilingMode].icon = 
-                iconFromASCII((obj.tilingStrategy[tilingMode].symbol))
+            obj.tilingStrategy[layout].icon = 
+                iconFromASCII((obj.tilingStrategy[layout].symbol))
         end
-        mode.image = obj.tilingStrategy[tilingMode].icon 
-        if tilingMode == tilingModeCurrentSpace then
-            mode.checked = true
+        layout.image = obj.tilingStrategy[layout].icon 
+        if layout == layoutCurrentSpace then
+            layout.checked = true
         end
-        mode.fn = obj.switchTilingMode
-        table.insert(menuTable, mode)
+        layout.fn = obj.switchLayout
+        table.insert(menuTable, layout)
     end
     
     -- obj.log.d("< menuTable ->", inspect.inspect(menuTable))
@@ -783,22 +783,22 @@ function obj.updateMenu()
     if not obj.menubar then return end
     obj.log.d("> updateMenu")
     obj.menubar:setIcon(
-        obj.tilingStrategy[obj.tilingModeCurrentSpace()].symbol)
+        obj.tilingStrategy[obj.layoutCurrentSpace()].symbol)
     obj.menubar:setMenu(obj.menuTable)
     obj.log.d("< updateMenu")
 end
 
---- TilingWindowManager.displayTilingMode() -> nil
+--- TilingWindowManager.displayLayout() -> nil
 --- Function
---- Shows an alert displaying the current spaces current tiling mode.
+--- Shows an alert displaying the current spaces current layout.
 ---
 --- Parameters:
 ---  * None
 ---
 --- Returns:
 ---  * None
-function obj.displayTilingMode()
-    hs.alert(obj.tilingModeCurrentSpace().." Mode", 1)
+function obj.displayLayout()
+    hs.alert(obj.layoutCurrentSpace().." Layout", 1)
 end
 
 
@@ -818,11 +818,11 @@ end
 ---   * swapPrev - swap current window with previous window.
 ---   * swapFirst - swap current window with first window.
 ---   * toggleFirst - Toggle current window with first window.
----   * float - switch current space to float tiling mode
----   * fullscreen - switch current space to fullscreen tiling mode.
----   * tall - switch current space to tall tiling mode.
----   * wide - switch current space to wide tiling mode.
----   * display - display current space tiling mode.
+---   * float - switch current space to float layout.
+---   * fullscreen - switch current space to fullscreen layout.
+---   * tall - switch current space to tall layout.
+---   * wide - switch current space to wide layout.
+---   * display - display current space layout.
 ---
 --- Returns:
 ---  * The TilingWindowManager object
@@ -837,21 +837,21 @@ function obj:bindHotkeys(mapping)
         swapFirst = obj.swapFirst,
         toggleFirst = obj.toggleFirst,
         float = function()
-            obj.setTilingModeCurrentSpace(obj.tilingMode.float)
+            obj.setLayoutCurrentSpace(obj.layouts.float)
         end,
         fullscreen = function()
-            obj.setTilingModeCurrentSpace(obj.tilingMode.fullscreen)
+            obj.setLayoutCurrentSpace(obj.layouts.fullscreen)
             obj.tileCurrentSpace()
         end,
         tall = function()
-            obj.setTilingModeCurrentSpace(obj.tilingMode.tall)
+            obj.setLayoutCurrentSpace(obj.layouts.tall)
             obj.tileCurrentSpace()
         end,
         wide = function()
-            obj.setTilingModeCurrentSpace(obj.tilingMode.wide)
+            obj.setLayoutCurrentSpace(obj.layouts.wide)
             obj.tileCurrentSpace()
         end,
-        display = obj.displayTilingMode,
+        display = obj.displayLayout,
     }
     spoons.bindHotkeysToSpec(def, mapping)
     obj.log.d("< bindHotkeys")
@@ -874,11 +874,11 @@ end
 ---    A table with configuration options for the spoon.
 ---    These keys are recognized:
 ---   * dynamic - if true: dynamically tile windows.
----   * tilingModes - a table with all tiling modes to be enabled.
+---   * layouts - a table with all layouts to be enabled.
 ---   * fullscreenRightApps - a table with app names, to position
----     right half only in fullscreen mode
+---     right half only in fullscreen layout.
 ---   * floatApp - a table with app names to always float.
----   * displayMode - if true: show mode when switching tiling mode.
+---   * displayLayout - if true: show layout when switching tiling layout.
 ---   * menubar - if true: enable menubar item.
 ---
 --- Returns:
@@ -902,8 +902,8 @@ function obj:start(config)
             }, function(_, _, _) obj.tileCurrentSpace() end)
     end
 
-    if config.tilingModes then
-        obj.enabledTilingModes = config.tilingModes
+    if config.layouts then
+        obj.enabledLayouts = config.layouts
     end
 
     if config.fullscreenRightApps then
@@ -914,9 +914,9 @@ function obj:start(config)
         obj.floatApps = config.floatApps
     end
 
-    if config.displayMode then obj.displayMode = true end
+    if config.displayLayout then obj.displayLayoutOnLayoutChange = true end
 
-    obj.initSpaces() -- needs obj.enabledTilingModes
+    obj.initSpaces() -- needs obj.enabledLayouts
 
     if config.menubar == true then
         obj.menubar = menubar.new()
