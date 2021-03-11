@@ -182,27 +182,35 @@ obj.tilingStrategy[obj.layouts.fullscreen] = {
 
 obj.tilingStrategy[obj.layouts.tall] = {
     tile = function(windows, layoutConfig)
-        obj.log.d("> tile", obj.layouts.tall)
-        if #windows == 1 then
-            obj.tilingStrategy[obj.layouts.fullscreen].tile(windows)
-        else
-            layoutConfig.mainRatio = layoutConfig.mainRatio or 0.5
+        obj.log.d("> tile", inspect(layoutConfig))
+        if #windows > 0 then
+            local mainNumberWindows = math.min(
+                layoutConfig.mainNumberWindows or 1,
+                #windows)
+            local stackNumberWindows = 0
+            local mainRatio = 1
+            if #windows > mainNumberWindows then -- check if stack
+                mainRatio = layoutConfig.mainRatio or 0.5
+                stackNumberWindows = #windows - mainNumberWindows
+            end
+
             for i, window in ipairs(windows) do
                 local frame = window:screen():frame()
-                if i == 1 then 
-                    -- vertical main
-                    frame.w = frame.w * layoutConfig.mainRatio
-                else
-                    -- vertical stack
-                    frame.x = frame.x + (frame.w * layoutConfig.mainRatio)
-                    frame.h = frame.h / (#windows - 1)
-                    frame.y = frame.y + frame.h * (i - 2)
-                    frame.w = frame.w * (1 - layoutConfig.mainRatio)
+                if i <= layoutConfig.mainNumberWindows then -- main
+                    frame.w = frame.w * mainRatio
+                    frame.h = frame.h / mainNumberWindows
+                    frame.y = frame.y + frame.h * (i - 1)
+                else -- stack
+                    frame.x = frame.x + (frame.w * mainRatio)
+                    frame.h = frame.h / stackNumberWindows
+                    frame.y = frame.y + 
+                        frame.h * (i - mainNumberWindows - 1)
+                    frame.w = frame.w * (1 - mainRatio)
                 end
                 window:setFrame(frame)
             end
         end
-        obj.log.d("< tile", obj.layouts.tall)
+        obj.log.d("< tile")
     end,
 
     symbol = [[ASCII:
@@ -226,27 +234,35 @@ obj.tilingStrategy[obj.layouts.tall] = {
 
 obj.tilingStrategy[obj.layouts.wide] = {
     tile = function(windows, layoutConfig)
-        obj.log.d("> tile", obj.layouts.wide)
-        if #windows == 1 then
-            obj.tilingStrategy[obj.layouts.fullscreen].tile(windows)
-        else
-            layoutConfig.mainRatio = layoutConfig.mainRatio or 0.5
+        obj.log.d("> tile", inspect(layoutConfig))
+        if #windows > 0 then
+            local mainNumberWindows = math.min(
+                layoutConfig.mainNumberWindows or 1,
+                #windows)
+            local stackNumberWindows = 0
+            local mainRatio = 1
+            if #windows > mainNumberWindows then -- check if stack
+                mainRatio = layoutConfig.mainRatio or 0.5
+                stackNumberWindows = #windows - mainNumberWindows
+            end
+
             for i, window in ipairs(windows) do
                 local frame = window:screen():frame()
-                if i == 1 then 
-                    -- horizontal main
-                    frame.h = frame.h * layoutConfig.mainRatio
-                else
-                    -- horizontal stack
-                    frame.y = frame.y + (frame.h * layoutConfig.mainRatio)
-                    frame.w = frame.w / (#windows - 1)
-                    frame.x = frame.x + frame.w * (i - 2)
-                    frame.h = frame.h * (1 - layoutConfig.mainRatio)
+                if i <= layoutConfig.mainNumberWindows then -- main
+                    frame.h = frame.h * mainRatio
+                    frame.w = frame.w / mainNumberWindows
+                    frame.x = frame.x + frame.w * (i - 1)
+                else -- stack
+                    frame.y = frame.y + (frame.h * mainRatio)
+                    frame.w = frame.w / stackNumberWindows
+                    frame.x = frame.x + 
+                        frame.w * (i - mainNumberWindows - 1)
+                    frame.h = frame.h * (1 - mainRatio)
                 end
                 window:setFrame(frame)
             end
         end
-        obj.log.d("< tile", obj.layouts.wide)
+        obj.log.d("< tile")
     end,
 
     symbol = [[ASCII:
@@ -280,15 +296,18 @@ obj.tilingStrategy[obj.layouts.wide] = {
 --  * None
 function obj.saveSettings()
     obj.log.d("> saveSettings")
-    settings = {}
+    settingsData = {}
     for spaceID, space in pairs(obj.spaces) do
         local sID = tostring(spaceID)
-        settings[sID].layout = space.layout
-        settings[sID].mainNumberWindows = space.mainNumberWindows
-        settings[sID].mainRatio = space.mainRatio
+        obj.log.d(spaceID, sID, inspect(space))
+        settingsData[sID] = {}
+        settingsData[sID].layout = space.layout
+        settingsData[sID].mainNumberWindows = space.mainNumberWindows
+        settingsData[sID].mainRatio = space.mainRatio
     end
-    obj.log.d(inspect(settings))
-    settings.set("TilingWindowManager", settings)
+    -- obj.log.d(inspect(settingsData))
+    settings.clear("TilingWindowManager")
+    settings.set("TilingWindowManager", settingsData)
     obj.log.d("< saveSettings")
 end
 
@@ -302,13 +321,15 @@ end
 function obj.loadSettings()
     obj.log.d("> loadSettings")
     local settingsInt = {}
-    local settings = settings.get("TilingWindowManager")
-    if settings then 
-        for spaceID, setting in pairs(settings) do
+    local settingsData = settings.get("TilingWindowManager")
+    -- obj.log.d(inspect(settingsData))
+    if settingsData then 
+        for spaceID, setting in pairs(settingsData) do
             if setting.layout and
-                    settingmainNumberWindows and
+                    setting.mainNumberWindows and
                     setting.mainRatio then
                 sID = tonumber(spaceID)
+                settingsInt[sID] = {}
                 settingsInt[sID].layout = setting.layout
                 settingsInt[sID].mainNumberWindows = 
                     setting.mainNumberWindows
@@ -348,23 +369,25 @@ end
 --  * None
 function obj.initSpaces()
     obj.log.d("> initSpaces")
-    local settings = obj.loadSettings()
+    local settingsData = obj.loadSettings()
 
     obj.spaces = {} -- we will re-build this now
 
     local screen = spaces.mainScreenUUID() -- TODO multi-monitor
-    for space_number, spaceID in ipairs(spaces.layout()[screen]) do
+    for space_number, spaceID in pairs(spaces.layout()[screen]) do
         local space = obj.initSpace()
-        if settings and settings[spaceID] then
-            layout = settings[spaceID].layout
+        if settingsData and settingsData[spaceID] then
+            local layout = settingsData[spaceID].layout
             if fnutils.contains(obj.enabledLayouts, layout) then
                 space.layout = layout
             end
-            space.mainNumberWindows = settings[spaceID].mainNumberWindows
-            space.mainRatio = settings[spaceID].mainRatio
+            space.mainNumberWindows = 
+                settingsData[spaceID].mainNumberWindows
+            space.mainRatio = settingsData[spaceID].mainRatio
         end
         obj.spaces[spaceID] = space
     end
+    -- obj.log.d(inspect(obj.spaces))
     obj.log.d("< initSpaces")
 end
 
@@ -430,9 +453,11 @@ function obj.setLayoutCurrentSpace(layout)
 
     if obj.displayLayoutOnLayoutChange then obj.displayLayout() end
     
+    obj.saveSettings()
     obj.log.d("> setLayoutCurrentSpace")
 end
 
+-- TODO
 function obj.setMainRatioRelative(ratio)
     obj.log.d("> setMainRatioRelative", ratio)
     local currentSpaceID = spaces.activeSpace()
@@ -444,6 +469,23 @@ function obj.setMainRatioRelative(ratio)
     if obj.spaces[currentSpaceID].mainRatio > 0.8 then 
         obj.spaces[currentSpaceID].mainRatio = 0.8
     end
+    obj.saveSettings()
+    obj.log.d("> setMainRatioRelative")
+end
+
+-- TODO
+function obj.setMainWindowsRelative(i)
+    obj.log.d("> setMainWindowsRelative", i)
+    local currentSpaceID = spaces.activeSpace()
+    obj.spaces[currentSpaceID].mainNumberWindows = 
+        obj.spaces[currentSpaceID].mainNumberWindows + i
+    if obj.spaces[currentSpaceID].mainNumberWindows < 1 then 
+        obj.spaces[currentSpaceID].mainNumberWindows = 1
+    end
+    if obj.spaces[currentSpaceID].mainNumberWindows > 10 then 
+        obj.spaces[currentSpaceID].mainNumberWindows = 10
+    end
+    obj.saveSettings()
     obj.log.d("> setMainRatioRelative")
 end
 
@@ -493,13 +535,10 @@ function obj.tileableWindowsCurrentSpace()
         f2 = w2:frame()
         return (f1.x + f1.y) < (f2.x + f2.y)
     end)
-    -- Add new windows to ordered windows, at top of stack
-    local mainWindows = {orderedVisibleWindows[1]} -- TODO multi-windows
-    local stackWindows = {table.unpack(orderedVisibleWindows, 2)}
-    local tileableWindows = fnutils.concat(fnutils.concat(
-        mainWindows, 
-        newVisibleWindows),
-        stackWindows)
+    -- Add new windows to ordered windows, at top 
+    local tileableWindows = fnutils.concat(
+        newVisibleWindows,
+        orderedVisibleWindows) 
     -- filter out configured "always float" app windows
     local tilingWindows = fnutils.filter(tileableWindows, function(w)
         return (not fnutils.contains(
@@ -509,7 +548,7 @@ function obj.tileableWindowsCurrentSpace()
 
     obj.spaces[currentSpaceID].tilingWindows = tilingWindows
 
-    --obj.logWindows("Tileable Windows: ", tilingWindows)
+    obj.logWindows("Tileable Windows: ", tilingWindows)
     obj.log.d("< tileableWindowsCurrentSpace", "(...)")
     return tilingWindows
 end
@@ -636,7 +675,7 @@ function obj.swapFirst()
         i = fnutils.indexOf(windows, window.focusedWindow()) 
         if i then
             if i == 1 then
-                obj.swapNext()
+                obj.moveRelative(1)
             elseif i > 1 then
                 windows[i], windows[1] = windows[1], windows[i]
                 obj.tileCurrentSpace(windows)
@@ -672,7 +711,7 @@ function obj.toggleFirst()
         i = fnutils.indexOf(windows, window.focusedWindow()) 
         if i then
             if i == 1 then
-                obj.swapNext()
+                obj.moveRelative(1)
             elseif i > 1 then
                 table.insert(windows, 1, table.remove(windows, i))
                 obj.tileCurrentSpace(windows)
@@ -702,7 +741,6 @@ function obj.switchLayout(modifiers, menuItem)
     obj.setLayoutCurrentSpace(menuItem.title)
     obj.tileCurrentSpace()
     obj.updateMenu()
-    obj.saveSettings()
     obj.log.d("< switchLayout")
 end
 
@@ -825,6 +863,14 @@ function obj:bindHotkeys(mapping)
         end,
         decMainRatio = function()
             obj.setMainRatioRelative(-0.05)
+            obj.tileCurrentSpace()
+        end,
+        incMainWindows = function()
+            obj.setMainWindowsRelative(1)
+            obj.tileCurrentSpace()
+        end,
+        decMainWindows = function()
+            obj.setMainWindowsRelative(-1)
             obj.tileCurrentSpace()
         end,
         focusNext = function() obj.focusRelative(1) end,
