@@ -333,7 +333,7 @@ function obj.loadSettings()
                 settingsInt[sID].layout = setting.layout
                 settingsInt[sID].mainNumberWindows = 
                     setting.mainNumberWindows
-                settingsInt[sID].mainPercentage = 
+                settingsInt[sID].mainRatio = 
                     setting.mainRatio
             end
         end
