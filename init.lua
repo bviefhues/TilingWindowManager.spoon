@@ -120,9 +120,9 @@ obj.tilingStrategy = {}
 
 obj.tilingStrategy[obj.layouts.floating] = {
     tile = function(windows, layoutConfig)
-        obj.log.d("> tileLayout", obj.layouts.floating)
+        obj.log.d("> tile", inspect(layoutConfig))
         -- do nothing 
-        obj.log.d("< tileLayout", obj.layouts.floating)
+        obj.log.d("< tile")
     end,
 
     symbol = [[ASCII:
@@ -146,7 +146,7 @@ obj.tilingStrategy[obj.layouts.floating] = {
 
 obj.tilingStrategy[obj.layouts.fullscreen] = {
     tile = function(windows, layoutConfig)
-        obj.log.d("> tileLayout", obj.layouts.fullscreen)
+        obj.log.d("> tile", obj.layouts.fullscreen)
         for i, window in ipairs(windows) do
             local frame = window:screen():frame()
             appTitle = window:application():title()
@@ -158,7 +158,7 @@ obj.tilingStrategy[obj.layouts.fullscreen] = {
             end
             window:setFrame(frame)
         end
-        obj.log.d("< tileLayout", obj.layouts.fullscreen)
+        obj.log.d("< tile", obj.layouts.fullscreen)
     end,
 
     symbol = [[ASCII:
@@ -828,6 +828,15 @@ function obj.displayLayout()
     obj.log.d("< displayLayout")
 end
 
+function obj.functionTimer(f)
+    obj.log.d("> functionTimer")
+    ttime = os.time()
+    ctime = os.clock()
+    f()
+    obj.log.d("< functionTimer", 
+        "time:", os.time()-ttime, 
+        "clock:", os.clock()-ctime)
+end
 
 -- Spoon methods ----------------------------------------------------
 
@@ -856,44 +865,72 @@ end
 function obj:bindHotkeys(mapping)
     obj.log.d("> bindHotkeys", inspect(mapping))
     local def = {
-        tile = obj.tileCurrentSpace,
-        incMainRatio = function()
-            obj.setMainRatioRelative(0.05)
-            obj.tileCurrentSpace()
-        end,
-        decMainRatio = function()
-            obj.setMainRatioRelative(-0.05)
-            obj.tileCurrentSpace()
-        end,
-        incMainWindows = function()
-            obj.setMainWindowsRelative(1)
-            obj.tileCurrentSpace()
-        end,
-        decMainWindows = function()
-            obj.setMainWindowsRelative(-1)
-            obj.tileCurrentSpace()
-        end,
+        tile = function() obj.functionTimer(
+                obj.tileCurrentSpace) 
+            end,
+        incMainRatio = function() obj.functionTimer(
+                function()
+                    obj.setMainRatioRelative(0.05)
+                    obj.tileCurrentSpace()
+                end) 
+            end,
+        decMainRatio = function() obj.functionTimer(
+                function()
+                    obj.setMainRatioRelative(-0.05)
+                    obj.tileCurrentSpace()
+                end) 
+            end,
+        incMainWindows = function() obj.functionTimer(
+                function()
+                    obj.setMainWindowsRelative(1)
+                    obj.tileCurrentSpace()
+                end) 
+            end,
+        decMainWindows = function() obj.functionTimer(
+                function()
+                    obj.setMainWindowsRelative(-1)
+                    obj.tileCurrentSpace()
+                end) 
+            end,
         focusNext = function() obj.focusRelative(1) end,
         focusPrev = function() obj.focusRelative(-1) end,
-        swapNext = function() obj.moveRelative(1) end,
-        swapPrev = function() obj.moveRelative(-1) end,
-        swapFirst = obj.swapFirst,
-        toggleFirst = obj.toggleFirst,
+        swapNext = function() obj.functionTimer(
+                function() 
+                    obj.moveRelative(1) 
+                end)
+            end,
+        swapPrev = function() obj.functionTimer(
+                function() 
+                    obj.moveRelative(-1) 
+                end)
+            end,
+        swapFirst = function() obj.functionTimer(
+                obj.swapFirst)
+            end,
+        toggleFirst = function() obj.functionTimer(
+                obj.toggleFirst)
+            end,
         float = function()
             obj.setLayoutCurrentSpace(obj.layouts.float)
         end,
-        fullscreen = function()
-            obj.setLayoutCurrentSpace(obj.layouts.fullscreen)
-            obj.tileCurrentSpace()
-        end,
-        tall = function()
-            obj.setLayoutCurrentSpace(obj.layouts.tall)
-            obj.tileCurrentSpace()
-        end,
-        wide = function()
-            obj.setLayoutCurrentSpace(obj.layouts.wide)
-            obj.tileCurrentSpace()
-        end,
+        fullscreen = function() obj.functionTimer(
+                function()
+                    obj.setLayoutCurrentSpace(obj.layouts.fullscreen)
+                    obj.tileCurrentSpace()
+                end)
+            end,
+        tall = function() obj.functionTimer(
+                function()
+                    obj.setLayoutCurrentSpace(obj.layouts.tall)
+                    obj.tileCurrentSpace()
+                end)
+            end,
+        wide = function() obj.functionTimer(
+                function()
+                    obj.setLayoutCurrentSpace(obj.layouts.wide)
+                    obj.tileCurrentSpace()
+                end)
+            end,
         display = obj.displayLayout,
     }
     spoons.bindHotkeysToSpec(def, mapping)
