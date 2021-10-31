@@ -303,6 +303,7 @@ function obj.saveSettings()
         settingsData[sID] = {}
         settingsData[sID].layout = space.layout
         settingsData[sID].mainNumberWindows = space.mainNumberWindows
+        settingsData[sID].stackNumberWindows = space.stackNumberWindows
         settingsData[sID].mainRatio = space.mainRatio
     end
     -- obj.log.d(inspect(settingsData))
@@ -327,12 +328,15 @@ function obj.loadSettings()
         for spaceID, setting in pairs(settingsData) do
             if setting.layout and
                     setting.mainNumberWindows and
+                    setting.stackNumberWindows and
                     setting.mainRatio then
                 sID = tonumber(spaceID)
                 settingsInt[sID] = {}
                 settingsInt[sID].layout = setting.layout
                 settingsInt[sID].mainNumberWindows = 
                     setting.mainNumberWindows
+                settingsInt[sID].stackNumberWindows = 
+                    setting.stackNumberWindows
                 settingsInt[sID].mainRatio = 
                     setting.mainRatio
             end
@@ -354,10 +358,10 @@ function obj.initSpace()
     space.layout = obj.enabledLayouts[1]
     space.tilingWindows = {}
     space.mainNumberWindows = 1
+    space.stackNumberWindows = 10
     space.mainRatio = 0.5
     return space
 end
-
 
 -- Internal: Initialize the obj.spaces table.
 -- Maps loadSettings() data to current spaces.
@@ -383,6 +387,8 @@ function obj.initSpaces()
             end
             space.mainNumberWindows = 
                 settingsData[spaceID].mainNumberWindows
+            space.stackNumberWindows = 
+                settingsData[spaceID].stackNumberWindows
             space.mainRatio = settingsData[spaceID].mainRatio
         end
         obj.spaces[spaceID] = space
@@ -489,6 +495,22 @@ function obj.setMainWindowsRelative(i)
     obj.log.d("> setMainRatioRelative")
 end
 
+-- TODO
+function obj.setStackWindowsRelative(i)
+    obj.log.d("> setStackWindowsRelative", i)
+    local currentSpaceID = spaces.activeSpace()
+    obj.spaces[currentSpaceID].stackNumberWindows = 
+        obj.spaces[currentSpaceID].stackNumberWindows + i
+    if obj.spaces[currentSpaceID].stackNumberWindows < 1 then 
+        obj.spaces[currentSpaceID].stackNumberWindows = 1
+    end
+    if obj.spaces[currentSpaceID].stackNumberWindows > 10 then 
+        obj.spaces[currentSpaceID].stackNumberWindows = 10
+    end
+    obj.saveSettings()
+    obj.log.d("> setStackRatioRelative")
+end
+
 -- Internal: Returns an ordered table of all tileable windows for the
 -- current space. Preserves the order of known windows and combines with 
 -- any newly visible windows in the space, e.g. through un-minimizing.
@@ -548,7 +570,7 @@ function obj.tileableWindowsCurrentSpace()
 
     obj.spaces[currentSpaceID].tilingWindows = tilingWindows
 
-    obj.logWindows("Tileable Windows: ", tilingWindows)
+    --obj.logWindows("Tileable Windows: ", tilingWindows)
     obj.log.d("< tileableWindowsCurrentSpace", "(...)")
     return tilingWindows
 end
@@ -975,10 +997,11 @@ function obj:start(config)
                 allowRoles   = { 'AXStandardWindow' },
             })
             :subscribe({ 
-                window.filter.windowMinimized,
-                window.filter.windowVisible,
-                window.filter.windowCreated,
-                window.filter.windowDestroyed,
+                window.filter.windowsChanged,
+                --window.filter.windowMinimized,
+                --window.filter.windowVisible,
+                --window.filter.windowCreated,
+                --window.filter.windowDestroyed,
             }, function(_, _, _) obj.tileCurrentSpace() end)
     end
 
