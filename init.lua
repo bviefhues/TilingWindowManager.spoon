@@ -149,10 +149,10 @@ obj.tilingStrategy[obj.layouts.fullscreen] = {
         obj.log.d("> tile", obj.layouts.fullscreen)
         for i, window in ipairs(windows) do
             local frame = window:screen():frame()
-            appTitle = window:application():title()
+            appBundleID = window:application():bundleID()
             -- Keep some apps on right side only
             -- Old habit...
-            if fnutils.contains(obj.fullscreenRightApps, appTitle) then
+            if fnutils.contains(obj.fullscreenRightApps, appBundleID) then
                 frame.x = frame.x + (frame.w / 2)
                 frame.w = frame.w / 2
             end
@@ -565,7 +565,7 @@ function obj.tileableWindowsCurrentSpace()
     local tilingWindows = fnutils.filter(tileableWindows, function(w)
         return (not fnutils.contains(
             obj.floatApps, 
-            w:application():name()))
+            w:application():bundleID()))
     end)
 
     obj.spaces[currentSpaceID].tilingWindows = tilingWindows
