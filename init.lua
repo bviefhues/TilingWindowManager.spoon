@@ -2,7 +2,6 @@
 ---
 --- Tiling Window Manager.
 
-local spaces =     require("hs._asm.undocumented.spaces")
 local inspect =    require("hs.inspect")
 local window =     require("hs.window")
 local fnutils =    require("hs.fnutils")
@@ -30,11 +29,6 @@ obj.license = "MIT - https://opensource.org/licenses/MIT"
 --- the default log level for the messages coming from the Spoon.
 obj.log = hs.logger.new("TilingWindowManager")
 
--- Internal: TiningWindowManager.spaces
--- Variable
--- Contains spaces-sepcific state.
-obj.spaces = {}
-
 -- Internal: TilingWindowManager.menubar
 -- Variable
 -- Contains the Spoons hs.menubar.
@@ -52,6 +46,13 @@ obj.spacesWatcher = nil
 -- notified on macOS window changes.
 obj.windowFilter = nil
 
+-- Internal: TilingWindowManager.tilingConfig
+-- Variable
+-- Table maintaining the tiling configuration per space. Key is the space 
+-- ID as returned by hs.spaces.focusedSpace(), value is a config table 
+-- initialized by TilingWindowManager.initTilingConfig()
+obj.tilingConfig = {}
+
 --- TilingWindowManager.layouts
 --- Variable
 --- A table holding all known tiling layouts. Maps keys to descriptive 
@@ -63,10 +64,11 @@ obj.windowFilter = nil
 ---  * TilingWindowManager.layouts.tall
 ---  * TilingWindowManager.layouts.wide
 obj.layouts = {
-    floating = "Floating",
+    floating =   "Floating",
     fullscreen = "Fullscreen",
-    tall = "Tall",
-    wide = "Wide",
+    tall =       "Tall",
+    wide =       "Wide",
+    talltwo =    "Tall Two Pane"
 }
 
 --- TilingWindowManager.enabledLayouts
@@ -119,8 +121,8 @@ obj.displayLayoutOnLayoutChange = false
 obj.tilingStrategy = {}
 
 obj.tilingStrategy[obj.layouts.floating] = {
-    tile = function(windows, layoutConfig)
-        obj.log.d("> tile", inspect(layoutConfig))
+    tile = function(tilingConfig)
+        obj.log.d("> tile", hs.inspect(tilingConfig))
         -- do nothing 
         obj.log.d("< tile")
     end,
@@ -145,16 +147,17 @@ obj.tilingStrategy[obj.layouts.floating] = {
 }
 
 obj.tilingStrategy[obj.layouts.fullscreen] = {
-    tile = function(windows, layoutConfig)
-        obj.log.d("> tile", obj.layouts.fullscreen)
-        for i, window in ipairs(windows) do
+    tile = function(tilingConfig)
+        obj.log.d("> tile", hs.inspect(tilingConfig))
+        for i, window in ipairs(tilingConfig.windows) do
             local frame = window:screen():frame()
-            appBundleID = window:application():bundleID()
             -- Keep some apps on right side only
             -- Old habit...
+            appBundleID = window:application():bundleID()
             if fnutils.contains(obj.fullscreenRightApps, appBundleID) then
-                frame.x = frame.x + (frame.w / 2)
-                frame.w = frame.w / 2
+                local mainRatio = tilingConfig.mainRatio or 0.5
+                frame.x = frame.x + (frame.w * mainRatio)
+                frame.w = frame.w * (1 - mainRatio)
             end
             window:setFrame(frame)
         end
@@ -181,22 +184,24 @@ obj.tilingStrategy[obj.layouts.fullscreen] = {
 }
 
 obj.tilingStrategy[obj.layouts.tall] = {
-    tile = function(windows, layoutConfig)
-        obj.log.d("> tile", inspect(layoutConfig))
+    tile = function(tilingConfig)
+        obj.log.d("> tile", hs.inspect(tilingConfig))
+        local windows = tilingConfig.windows
+
         if #windows > 0 then
             local mainNumberWindows = math.min(
-                layoutConfig.mainNumberWindows or 1,
-                #windows)
+                tilingConfig.mainNumberWindows or 1,
+                #tilingConfig.windows)
             local stackNumberWindows = 0
             local mainRatio = 1
             if #windows > mainNumberWindows then -- check if stack
-                mainRatio = layoutConfig.mainRatio or 0.5
+                mainRatio = tilingConfig.mainRatio or 0.5
                 stackNumberWindows = #windows - mainNumberWindows
             end
 
             for i, window in ipairs(windows) do
                 local frame = window:screen():frame()
-                if i <= layoutConfig.mainNumberWindows then -- main
+                if i <= tilingConfig.mainNumberWindows then -- main
                     frame.w = frame.w * mainRatio
                     frame.h = frame.h / mainNumberWindows
                     frame.y = frame.y + frame.h * (i - 1)
@@ -232,23 +237,78 @@ obj.tilingStrategy[obj.layouts.tall] = {
 ]],
 }
 
-obj.tilingStrategy[obj.layouts.wide] = {
-    tile = function(windows, layoutConfig)
-        obj.log.d("> tile", inspect(layoutConfig))
+obj.tilingStrategy[obj.layouts.talltwo] = {
+    tile = function(tilingConfig)
+        obj.log.d("> tile", hs.inspect(tilingConfig))
+        local windows = tilingConfig.windows
+
         if #windows > 0 then
             local mainNumberWindows = math.min(
-                layoutConfig.mainNumberWindows or 1,
+                tilingConfig.mainNumberWindows or 1,
                 #windows)
             local stackNumberWindows = 0
             local mainRatio = 1
             if #windows > mainNumberWindows then -- check if stack
-                mainRatio = layoutConfig.mainRatio or 0.5
+                mainRatio = tilingConfig.mainRatio or 0.5
                 stackNumberWindows = #windows - mainNumberWindows
             end
 
             for i, window in ipairs(windows) do
                 local frame = window:screen():frame()
-                if i <= layoutConfig.mainNumberWindows then -- main
+                if i <= tilingConfig.mainNumberWindows then -- main
+                    frame.w = frame.w * mainRatio
+                    frame.h = frame.h / mainNumberWindows
+                    frame.y = frame.y + frame.h * (i - 1)
+                else -- stack
+                    frame.x = frame.x + (frame.w * mainRatio)
+                    frame.h = frame.h 
+                    frame.y = frame.y  
+                    frame.w = frame.w * (1 - mainRatio)
+                end
+                window:setFrame(frame)
+            end
+        end
+        obj.log.d("< tile")
+    end,
+
+    symbol = [[ASCII:
+. . . . . . . . . . . . . . . . . . . . .
+. . h a # # # # # # # # # # # # # a b . .
+. h 2 # # # # # # 2 1 3 # # # # # # 3 b .
+. g . . . . . . . . # . . . . . . . . c .
+. # . . . . . . . . # . . . . . . . . # .
+. # . . . . . . . . # . . . . . . . . # .
+. # . . . . . . . . # . . . . . . . . # .
+. # . . . . . . . . # . . . . . . . . # .
+. # . . . . . . . . # . . . . . . . . # .
+. # . . . . . . . . # . . . . . . . . # .
+. # . . . . . . . . # . . . . . . . . # .
+. g . . . . . . . . # . . . . . . . . c .
+. f . . . . . . . . 1 . . . . . . . . d .
+. . f e # # # # # # # # # # # # # e d . .
+. . . . . . . . . . . . . . . . . . . . .
+]],
+}
+
+obj.tilingStrategy[obj.layouts.wide] = {
+    tile = function(tilingConfig)
+        obj.log.d("> tile", hs.inspect(tilingConfig))
+        local windows = tilingConfig.windows
+
+        if #windows > 0 then
+            local mainNumberWindows = math.min(
+                tilingConfig.mainNumberWindows or 1,
+                #windows)
+            local stackNumberWindows = 0
+            local mainRatio = 1
+            if #windows > mainNumberWindows then -- check if stack
+                mainRatio = tilingConfig.mainRatio or 0.5
+                stackNumberWindows = #windows - mainNumberWindows
+            end
+
+            for i, window in ipairs(windows) do
+                local frame = window:screen():frame()
+                if i <= tilingConfig.mainNumberWindows then -- main
                     frame.h = frame.h * mainRatio
                     frame.w = frame.w / mainNumberWindows
                     frame.x = frame.x + frame.w * (i - 1)
@@ -285,116 +345,79 @@ obj.tilingStrategy[obj.layouts.wide] = {
 }
 
 
--- Load and save settings, initiaize data structures ----------------
+-- Tiling Config ------------------------------------------------------
 
--- Internal: Save spaces config to keep them across hammerspoon reloads
+-- Internal: Save tiling config to keep them across hammerspoon reloads
 --
 -- Parameters:
 --  * None
 --
 -- Returns:
 --  * None
-function obj.saveSettings()
-    obj.log.d("> saveSettings")
-    settingsData = {}
-    for spaceID, space in pairs(obj.spaces) do
-        local sID = tostring(spaceID)
-        obj.log.d(spaceID, sID, inspect(space))
-        settingsData[sID] = {}
-        settingsData[sID].layout = space.layout
-        settingsData[sID].mainNumberWindows = space.mainNumberWindows
-        settingsData[sID].stackNumberWindows = space.stackNumberWindows
-        settingsData[sID].mainRatio = space.mainRatio
-    end
-    -- obj.log.d(inspect(settingsData))
-    settings.clear("TilingWindowManager")
-    settings.set("TilingWindowManager", settingsData)
-    obj.log.d("< saveSettings")
-end
-
--- Internal: Load spaces config
---
--- Parameters:
---  * None
---
--- Returns:
---  * Settings table
-function obj.loadSettings()
-    obj.log.d("> loadSettings")
-    local settingsInt = {}
-    local settingsData = settings.get("TilingWindowManager")
-    -- obj.log.d(inspect(settingsData))
-    if settingsData then 
-        for spaceID, setting in pairs(settingsData) do
-            if setting.layout and
-                    setting.mainNumberWindows and
-                    setting.stackNumberWindows and
-                    setting.mainRatio then
-                sID = tonumber(spaceID)
-                settingsInt[sID] = {}
-                settingsInt[sID].layout = setting.layout
-                settingsInt[sID].mainNumberWindows = 
-                    setting.mainNumberWindows
-                settingsInt[sID].stackNumberWindows = 
-                    setting.stackNumberWindows
-                settingsInt[sID].mainRatio = 
-                    setting.mainRatio
+function obj.saveTilingConfig()
+    obj.log.d("> saveTilingConfig")
+    local saveTilingConfig = {}
+    for k1, v1 in pairs(obj.tilingConfig) do
+        saveTilingConfig[k1] = {}
+        for k2, v2 in pairs(v1) do
+            if type(v2) ~= "table" then -- everything except window list
+                saveTilingConfig[k1][k2] = v2
             end
         end
     end
-    obj.log.d("< loadSettings ->", inspect.inspect(settingsInt))
-    return settingsInt
+    --obj.log.d("saveTilingConfig", hs.inspect(saveTilingConfig))
+    settings.clear(obj.name)
+    settings.set(obj.name, saveTilingConfig)
+    obj.log.d("< saveTilingConfig")
 end
 
--- Internal: generate default data structure for a space.
+-- Internal: Load tiling config and merge with existing tiling config
+--
+-- Parameters:
+--  * None
+--
+-- Returns:
+--  * none
+function obj.loadTilingConfig()
+    obj.log.d("> loadTilingConfig")
+    local allSpaces = {} -- to deflate screens and prepare lookup 
+    for screen, spaces in pairs(hs.spaces.allSpaces()) do
+        for k, space in pairs(spaces) do
+            allSpaces[tostring(space)] = true 
+        end
+    end
+
+    local settingsData = settings.get(obj.name)
+
+    for space, config in pairs(settingsData) do
+        if obj.tilingConfig[space] == nil then -- is not known
+            if allSpaces[space] ~= nil then -- is actually a current space
+                --  start with known clean config
+                obj.tilingConfig[space] = obj.initTilingConfig()
+                -- overwrite loaded config parameters
+                for k, v in pairs(config) do
+                    obj.tilingConfig[space][k] = v
+                end
+            end
+        end
+    end
+    obj.log.d("< loadTilingConfig")
+end
+
+-- Internal: generate default tiling config structure for a space.
 --
 -- Parameters:
 --  * None
 --
 -- Returns
---  * Table with default data structure
-function obj.initSpace()
-    local space = {}
-    space.layout = obj.enabledLayouts[1]
-    space.tilingWindows = {}
-    space.mainNumberWindows = 1
-    space.stackNumberWindows = 10
-    space.mainRatio = 0.5
-    return space
-end
-
--- Internal: Initialize the obj.spaces table.
--- Maps loadSettings() data to current spaces.
---
--- Parameters:
---  * None
---
--- Returns:
---  * None
-function obj.initSpaces()
-    obj.log.d("> initSpaces")
-    local settingsData = obj.loadSettings()
-
-    obj.spaces = {} -- we will re-build this now
-
-    local screen = spaces.mainScreenUUID() -- TODO multi-monitor
-    for space_number, spaceID in pairs(spaces.layout()[screen]) do
-        local space = obj.initSpace()
-        if settingsData and settingsData[spaceID] then
-            local layout = settingsData[spaceID].layout
-            if fnutils.contains(obj.enabledLayouts, layout) then
-                space.layout = layout
-            end
-            space.mainNumberWindows = 
-                settingsData[spaceID].mainNumberWindows
-            space.stackNumberWindows = 
-                settingsData[spaceID].stackNumberWindows
-            space.mainRatio = settingsData[spaceID].mainRatio
-        end
-        obj.spaces[spaceID] = space
-    end
-    -- obj.log.d(inspect(obj.spaces))
-    obj.log.d("< initSpaces")
+--  * Table with default tiling config structure
+function obj.initTilingConfig()
+    local tilingConfig = {}
+    tilingConfig.layout = obj.enabledLayouts[1]
+    tilingConfig.windows = {} -- windows in tiling order
+    tilingConfig.mainNumberWindows = 1
+    tilingConfig.mainRatio = 0.5
+    return tilingConfig
 end
 
 
@@ -426,153 +449,153 @@ function obj.logWindows(text, windows)
     end
 end
 
--- Internal: Gets the tiling layout of the current macOS space
---
--- Parameters:
---  * None
---
--- Returns:
---  * A table with layout configuration, see `initSpace()`
-function obj.layoutConfigCurrentSpace()
-    obj.log.d("> layoutConfigurationCurrentSpace")
-    local currentSpaceID = spaces.activeSpace()
-    local layoutConfig = obj.spaces[currentSpaceID]
-    obj.log.d("< layoutConfigurationCurrentSpace", inspect(layoutConfig))
-    return layoutConfig
-end
 
--- Internal: Sets the tiling layout of the current space.
+-- Internal: Sets the tiling config of the current space.
 -- 
 -- Parameters:
 --  * layout - String as per `obj.enabledLayouts`
 --
 -- Returns:
---  * None
+--  * tiling config - table as per `obj.initTilingConfig()`
 function obj.setLayoutCurrentSpace(layout)
     obj.log.d("> setLayoutCurrentSpace", layout)
+    local tilingConfig = obj.tilingConfigCurrentSpace()
+
     if fnutils.contains(obj.enabledLayouts, layout) then
-        local currentSpaceID = spaces.activeSpace()
-        obj.spaces[currentSpaceID].layout = layout
+        tilingConfig.layout = layout
     else
-        obj.log.d("Tiling layout not enabled:", layout)
+        obj.log.d("  Tiling layout not enabled:", layout)
     end
 
-    if obj.displayLayoutOnLayoutChange then obj.displayLayout() end
+    if obj.displayLayoutOnLayoutChange then 
+        obj.displayLayout(tilingConfig) 
+    end
     
-    obj.saveSettings()
-    obj.log.d("> setLayoutCurrentSpace")
+    obj.saveTilingConfig()
+    obj.log.d("< setLayoutCurrentSpace")
+    return tilingConfig
 end
 
--- TODO
+-- Internal: change the ratio between main and stack.
+-- 
+-- Parameters:
+--  * ratio - relative ratio, negative makes main smaller, positive 
+--            makes main larger. Since ratio is between 0.2 and 0.8,
+--            argument should be a fractional value.
+--
+-- Returns:
+--  * none
 function obj.setMainRatioRelative(ratio)
     obj.log.d("> setMainRatioRelative", ratio)
-    local currentSpaceID = spaces.activeSpace()
-    obj.spaces[currentSpaceID].mainRatio = 
-        obj.spaces[currentSpaceID].mainRatio + ratio
-    if obj.spaces[currentSpaceID].mainRatio < 0.2 then 
-        obj.spaces[currentSpaceID].mainRatio = 0.2
+    local tilingConfig = obj.tilingConfigCurrentSpace()
+
+    tilingConfig.mainRatio = tilingConfig.mainRatio + ratio
+    if tilingConfig.mainRatio < 0.2 then 
+        tilingConfig.mainRatio = 0.2
     end
-    if obj.spaces[currentSpaceID].mainRatio > 0.8 then 
-        obj.spaces[currentSpaceID].mainRatio = 0.8
+    if tilingConfig.mainRatio > 0.8 then 
+        tilingConfig.mainRatio = 0.8
     end
-    obj.saveSettings()
+    obj.saveTilingConfig()
     obj.log.d("> setMainRatioRelative")
 end
 
--- TODO
+-- Internal: change the number of main windows.
+-- 
+-- Parameters:
+--  * i - relative window number change, negative lowers number of 
+--        main windows, positive increases number of main windows, 
+--        number of windows is capped between 1 and 10, argument 
+--        should likely be either -1 or 1.
+--
+-- Returns:
+--  * none
 function obj.setMainWindowsRelative(i)
     obj.log.d("> setMainWindowsRelative", i)
-    local currentSpaceID = spaces.activeSpace()
-    obj.spaces[currentSpaceID].mainNumberWindows = 
-        obj.spaces[currentSpaceID].mainNumberWindows + i
-    if obj.spaces[currentSpaceID].mainNumberWindows < 1 then 
-        obj.spaces[currentSpaceID].mainNumberWindows = 1
+    local tilingConfig = obj.tilingConfigCurrentSpace()
+    tilingConfig.mainNumberWindows = tilingConfig.mainNumberWindows + i
+    if tilingConfig.mainNumberWindows < 1 then 
+        tilingConfig.mainNumberWindows = 1
     end
-    if obj.spaces[currentSpaceID].mainNumberWindows > 10 then 
-        obj.spaces[currentSpaceID].mainNumberWindows = 10
+    if tilingConfig.mainNumberWindows > 10 then 
+        tilingConfig.mainNumberWindows = 10
     end
-    obj.saveSettings()
+    obj.saveTilingConfig()
     obj.log.d("> setMainRatioRelative")
 end
 
--- TODO
-function obj.setStackWindowsRelative(i)
-    obj.log.d("> setStackWindowsRelative", i)
-    local currentSpaceID = spaces.activeSpace()
-    obj.spaces[currentSpaceID].stackNumberWindows = 
-        obj.spaces[currentSpaceID].stackNumberWindows + i
-    if obj.spaces[currentSpaceID].stackNumberWindows < 1 then 
-        obj.spaces[currentSpaceID].stackNumberWindows = 1
-    end
-    if obj.spaces[currentSpaceID].stackNumberWindows > 10 then 
-        obj.spaces[currentSpaceID].stackNumberWindows = 10
-    end
-    obj.saveSettings()
-    obj.log.d("> setStackRatioRelative")
-end
-
--- Internal: Returns an ordered table of all tileable windows for the
+-- Internal: Returns the tiling configuration for the
 -- current space. Preserves the order of known windows and combines with 
 -- any newly visible windows in the space, e.g. through un-minimizing.
 --
+-- This is the place where any automatic arranging or ordering of windows
+-- happens.
+--
 -- Parameters:
---  * None
+--  * evalWindows - if True: force recalculating the window order
 --
 -- Returns:
---  * A table of `hs.window` objects ordered for layouting
-function obj.tileableWindowsCurrentSpace()
-    obj.log.d("> tileableWindowsCurrentSpace")
-    local currentSpaceID = spaces.activeSpace()
-    if not obj.spaces[currentSpaceID] then
-        -- current space unknown, initialize
-        obj.spaces[currentSpaceID] = obj.initSpaces()
+--  * A table with tiling config information
+function obj.tilingConfigCurrentSpace(evalWindows)
+    obj.log.d("> tilingConfigCurrentSpace")
+
+    local spaceID = tostring(hs.spaces.focusedSpace())
+    --obj.log.d("spaceID = ", spaceID)
+    local tilingConfig = obj.tilingConfig[spaceID]
+
+    if tilingConfig == nil then
+        obj.log.d("creating new tilingConfig")
+        tilingConfig = obj.initTilingConfig()
     end
-    
-    -- TODO variable naming is a mess
-    -- all visible and "good" windows in current space
-    local windows = spaces.allWindowsForSpace(currentSpaceID)
-    local visibleWindows = fnutils.filter(windows, function(w) 
-        return (
-            w:isVisible() 
-            and w:isStandard() 
-            and (not w:isMinimized())
-            --and #w:title()>0
-        )
-    end)
-    -- recorded state of window order
-    local orderedWindows = obj.spaces[currentSpaceID].tilingWindows
-    -- filter ordered windows for visible windows only
-    local orderedVisibleWindows = fnutils.filter(orderedWindows, 
-        function(w)
-            return fnutils.contains(visibleWindows, w)
+        
+    if evalWindows then
+        local visibleWindows = fnutils.filter(hs.window.orderedWindows(), 
+            -- ordered windows to pick backmost window for tilingConfig
+            function(w) 
+                return (
+                    w:isVisible() 
+                    and w:isStandard() 
+                    and (not w:isMinimized())
+                )
+            end)
+
+        -- filter window config for currently visible windows only
+        local knownWindows = fnutils.filter(tilingConfig.windows, 
+            function(w)
+                return fnutils.contains(visibleWindows, w)
+            end)
+        -- Windows which are new, we don't know the order of
+        local newWindows = fnutils.filter(visibleWindows, function(w)
+            return (not fnutils.contains(tilingConfig.windows, w))
         end)
-    -- Windows which are new, we don't know the order of
-    local newVisibleWindows = fnutils.filter(visibleWindows, function(w)
-        return (not fnutils.contains(orderedWindows, w))
-    end)
-    -- sort by window position to maintain order across Hammerspoon
-    -- restarts. 
-    table.sort(newVisibleWindows, function(w1, w2) 
-        f1 = w1:frame()
-        f2 = w2:frame()
-        return (f1.x + f1.y) < (f2.x + f2.y)
-    end)
-    -- Add new windows to ordered windows, at top 
-    local tileableWindows = fnutils.concat(
-        newVisibleWindows,
-        orderedVisibleWindows) 
-    -- filter out configured "always float" app windows
-    local tilingWindows = fnutils.filter(tileableWindows, function(w)
-        return (not fnutils.contains(
-            obj.floatApps, 
-            w:application():bundleID()))
-    end)
+        -- sort by window position to maintain order across Hammerspoon
+        -- restarts. 
+        table.sort(newWindows, function(w1, w2) 
+            f1 = w1:frame()
+            f2 = w2:frame()
+            return (f1.x + f1.y) < (f2.x + f2.y)
+        end)
+        -- Add new windows to ordered windows 
+        -- This adds new windows at beginning, i.e. replaces the main
+        -- pane.
+        local tileableWindows = fnutils.concat(
+            newWindows,
+            knownWindows) 
+        -- filter out configured "always float" app windows
+        local tilingWindows = fnutils.filter(tileableWindows, function(w)
+            return (not fnutils.contains(
+                obj.floatApps, 
+                w:application():bundleID()))
+        end)
 
-    obj.spaces[currentSpaceID].tilingWindows = tilingWindows
+        tilingConfig.windows = tilingWindows
+    end
 
-    --obj.logWindows("Tileable Windows: ", tilingWindows)
-    obj.log.d("< tileableWindowsCurrentSpace", "(...)")
-    return tilingWindows
+    -- save tiling config for later re-use
+    obj.tilingConfig[spaceID] = tilingConfig
+
+    obj.log.d("< tilingConfigCurrentSpace")
+    return tilingConfig
 end
 
 -- Internal: tiles the current macOS space, i.e. re-arranges windows
@@ -589,12 +612,10 @@ end
 --
 -- Notes:
 -- This calls the `tile()` function of `tilingStrategy`. 
-function obj.tileCurrentSpace(windows)
-    obj.log.d("> tileCurrentSpace", hs.inspect(windows))
-    --obj.logWindows("Windows:", windows)
-    local windows = windows or obj.tileableWindowsCurrentSpace()
-    local layoutConfig = obj.layoutConfigCurrentSpace()
-    obj.tilingStrategy[layoutConfig.layout].tile(windows, layoutConfig)
+function obj.tileCurrentSpace(evalWindows)
+    obj.log.d("> tileCurrentSpace", hs.inspect(evalWindows))
+    local tilingConfig = obj.tilingConfigCurrentSpace(evalWindows)
+    obj.tilingStrategy[tilingConfig.layout].tile(tilingConfig)
     obj.log.d("< tileCurrentSpace")
 end
 
@@ -608,7 +629,7 @@ end
 --  * None
 function obj.switchedToSpace(number)
     obj.log.d("> switchedToSpace", number)
-    obj.tileCurrentSpace() -- in case window configuration has changed
+    obj.tileCurrentSpace(true) -- in case window configuration has changed
     obj.updateMenu()
     obj.log.d("< switchedToSpace")
 end
@@ -630,7 +651,7 @@ end
 ---  * None
 function obj.focusRelative(relativeIndex)
     obj.log.d("> focusRelative", relativeIndex)
-    local windows = obj.tileableWindowsCurrentSpace()
+    local windows = obj.tilingConfigCurrentSpace().windows
     if #windows > 1 then
         i = fnutils.indexOf(windows, window.focusedWindow()) 
         if i then
@@ -659,7 +680,7 @@ end
 ---  * None
 function obj.moveRelative(relativeIndex)
     obj.log.d("> moveRelative", relativeIndex)
-    local windows = obj.tileableWindowsCurrentSpace()
+    local windows = obj.tilingConfigCurrentSpace().windows
     if #windows > 1 then
         i = fnutils.indexOf(windows, window.focusedWindow()) 
         if i then
@@ -692,7 +713,7 @@ end
 ---  * None
 function obj.swapFirst()
     obj.log.d("> swapFirst")
-    local windows = obj.tileableWindowsCurrentSpace()
+    local windows = obj.tilingConfigCurrentSpace().windows
     if #windows > 1 then 
         i = fnutils.indexOf(windows, window.focusedWindow()) 
         if i then
@@ -728,7 +749,7 @@ end
 ---  * None
 function obj.toggleFirst()
     obj.log.d("> toggleFirst")
-    local windows = obj.tileableWindowsCurrentSpace()
+    local windows = obj.tilingConfigCurrentSpace().windows
     if #windows > 1 then
         i = fnutils.indexOf(windows, window.focusedWindow()) 
         if i then
@@ -792,7 +813,7 @@ end
 --  * menu table
 function obj.menuTable()
     obj.log.d("> menuTable")
-    local layoutCurrentSpace = obj.layoutConfigCurrentSpace().layout
+    local layoutCurrentSpace = obj.tilingConfigCurrentSpace().layout
     local menuTable = {}
     for i, layout in ipairs(obj.enabledLayouts) do
         local layout = {}
@@ -826,7 +847,7 @@ function obj.updateMenu()
     if not obj.menubar then return end
     obj.log.d("> updateMenu")
     obj.menubar:setIcon(
-        obj.tilingStrategy[obj.layoutConfigCurrentSpace().layout].symbol)
+        obj.tilingStrategy[obj.tilingConfigCurrentSpace().layout].symbol)
     obj.menubar:setMenu(obj.menuTable)
     obj.log.d("< updateMenu")
 end
@@ -840,13 +861,13 @@ end
 ---
 --- Returns:
 ---  * None
-function obj.displayLayout()
+function obj.displayLayout(tilingConfig)
     obj.log.d("> displayLayout")
-    local layoutConfig = obj.layoutConfigCurrentSpace()
-    hs.alert(layoutConfig.layout.." Layout", 1)
-    obj.log.d("Layout:", layoutConfig.layout)
-    obj.log.d("#Main windows:", layoutConfig.mainNumberWindows)
-    obj.log.d("Main ratio:", layoutConfig.mainRatio)
+    local tilingConfig = tilingConfig or obj.tilingConfigCurrentSpace()
+    hs.alert(tilingConfig.layout.." Layout", 1)
+    obj.log.d("  Layout:", tilingConfig.layout)
+    obj.log.d("  #Main windows:", tilingConfig.mainNumberWindows)
+    obj.log.d("  Main ratio:", tilingConfig.mainRatio)
     obj.log.d("< displayLayout")
 end
 
@@ -887,83 +908,56 @@ end
 function obj:bindHotkeys(mapping)
     obj.log.d("> bindHotkeys", inspect(mapping))
     local def = {
-        tile = function() obj.functionTimer(
-                obj.tileCurrentSpace) 
+        tile = obj.tileCurrentSpace,
+        incMainRatio = function()
+                obj.setMainRatioRelative(0.05)
+                obj.tileCurrentSpace()
             end,
-        incMainRatio = function() obj.functionTimer(
-                function()
-                    obj.setMainRatioRelative(0.05)
-                    obj.tileCurrentSpace()
-                end) 
+        decMainRatio = function()
+                obj.setMainRatioRelative(-0.05)
+                obj.tileCurrentSpace()
             end,
-        decMainRatio = function() obj.functionTimer(
-                function()
-                    obj.setMainRatioRelative(-0.05)
-                    obj.tileCurrentSpace()
-                end) 
+        incMainWindows = function()
+                obj.setMainWindowsRelative(1)
+                obj.tileCurrentSpace()
             end,
-        incMainWindows = function() obj.functionTimer(
-                function()
-                    obj.setMainWindowsRelative(1)
-                    obj.tileCurrentSpace()
-                end) 
-            end,
-        decMainWindows = function() obj.functionTimer(
-                function()
-                    obj.setMainWindowsRelative(-1)
-                    obj.tileCurrentSpace()
-                end) 
+        decMainWindows = function()
+                obj.setMainWindowsRelative(-1)
+                obj.tileCurrentSpace()
             end,
         focusNext = function() obj.focusRelative(1) end,
         focusPrev = function() obj.focusRelative(-1) end,
-        swapNext = function() obj.functionTimer(
-                function() 
-                    obj.moveRelative(1) 
-                end)
+        swapNext = function() 
+                obj.moveRelative(1) 
             end,
-        swapPrev = function() obj.functionTimer(
-                function() 
-                    obj.moveRelative(-1) 
-                end)
+        swapPrev = function() 
+                obj.moveRelative(-1) 
             end,
-        swapFirst = function() obj.functionTimer(
-                obj.swapFirst)
-            end,
-        toggleFirst = function() obj.functionTimer(
-                obj.toggleFirst)
-            end,
+        swapFirst = obj.swapFirst,
+        toggleFirst = obj.toggleFirst,
         float = function()
             obj.setLayoutCurrentSpace(obj.layouts.float)
         end,
-        fullscreen = function() obj.functionTimer(
-                function()
-                    obj.setLayoutCurrentSpace(obj.layouts.fullscreen)
-                    obj.tileCurrentSpace()
-                end)
+        fullscreen = function()
+                obj.setLayoutCurrentSpace(obj.layouts.fullscreen)
+                obj.tileCurrentSpace(true)
             end,
-        tall = function() obj.functionTimer(
-                function()
-                    obj.setLayoutCurrentSpace(obj.layouts.tall)
-                    obj.tileCurrentSpace()
-                end)
+        tall = function()
+                obj.setLayoutCurrentSpace(obj.layouts.tall)
+                obj.tileCurrentSpace(true)
             end,
-        wide = function() obj.functionTimer(
-                function()
-                    obj.setLayoutCurrentSpace(obj.layouts.wide)
-                    obj.tileCurrentSpace()
-                end)
+        talltwo = function()
+                obj.setLayoutCurrentSpace(obj.layouts.talltwo)
+                obj.tileCurrentSpace(true)
+            end,
+        wide = function()
+                obj.setLayoutCurrentSpace(obj.layouts.wide)
+                obj.tileCurrentSpace(true)
             end,
         display = obj.displayLayout,
     }
     spoons.bindHotkeysToSpec(def, mapping)
     obj.log.d("< bindHotkeys")
-    return self
-end
-
--- Internal: Stub only, not needed right now.
-function obj:init()
-    --obj.log.d("> init")
-    --obj.log.d("< init")
     return self
 end
 
@@ -988,6 +982,8 @@ end
 function obj:start(config)
     obj.log.d("> start")
 
+    obj.loadTilingConfig()
+
     if config.dynamic == true then
         obj.windowFilter = window.filter.new()
             :setDefaultFilter()
@@ -1002,7 +998,7 @@ function obj:start(config)
                 --window.filter.windowVisible,
                 --window.filter.windowCreated,
                 --window.filter.windowDestroyed,
-            }, function(_, _, _) obj.tileCurrentSpace() end)
+            }, function(_, _, _) obj.tileCurrentSpace(true) end)
     end
 
     if config.layouts then
@@ -1019,14 +1015,15 @@ function obj:start(config)
 
     if config.displayLayout then obj.displayLayoutOnLayoutChange = true end
 
-    obj.initSpaces() -- needs obj.enabledLayouts
-
     if config.menubar == true then
         obj.menubar = menubar.new()
         obj.updateMenu()
-        obj.spacesWatcher = hs.spaces.watcher.new(
-            obj.switchedToSpace):start()
     end
+
+    obj.spacesWatcher = hs.spaces.watcher.new(
+        obj.switchedToSpace):start()
+
+    obj.tileCurrentSpace(true)
 
     obj.log.d("< start")
     return self
