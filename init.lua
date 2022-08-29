@@ -556,6 +556,9 @@ function obj.tilingConfigCurrentSpace(evalWindows)
                     w:isVisible() 
                     and w:isStandard() 
                     and (not w:isMinimized())
+                    -- only windows on current screen, otherwise will
+                    -- mingle windows from all screens
+                    and w:screen() == hs.window.focusedWindow():screen()
                 )
             end)
 
@@ -815,24 +818,52 @@ function obj.menuTable()
     obj.log.d("> menuTable")
     local layoutCurrentSpace = obj.tilingConfigCurrentSpace().layout
     local menuTable = {}
+
+    -- Layouts
     for i, layout in ipairs(obj.enabledLayouts) do
-        local layout = {}
-        layout.title = layout
+        local menuItem = {}
+        menuItem.title = layout
         if not obj.tilingStrategy[layout].icon then
             -- cache icons
             obj.tilingStrategy[layout].icon = 
                 iconFromASCII((obj.tilingStrategy[layout].symbol))
         end
-        layout.image = obj.tilingStrategy[layout].icon 
+        menuItem.image = obj.tilingStrategy[layout].icon 
         if layout == layoutCurrentSpace then
-            layout.checked = true
+            menuItem.checked = true
         end
-        layout.fn = obj.switchLayout
-        table.insert(menuTable, layout)
+        menuItem.fn = obj.switchLayout
+        table.insert(menuTable, menuItem)
     end
     
-    -- obj.log.d("< menuTable ->", inspect.inspect(menuTable))
-    obj.log.d("< menuTable ->", "(...)")
+    -- Config commands
+    table.insert(menuTable, {title = "-"})
+    table.insert(menuTable, {
+        title = "Main pane +",
+        fn = function() 
+            obj.setMainWindowsRelative(1)
+            obj.tileCurrentSpace()
+        end})
+    table.insert(menuTable, {
+        title = "Main pane -",
+        fn = function() 
+            obj.setMainWindowsRelative(-1)
+            obj.tileCurrentSpace()
+        end})
+    table.insert(menuTable, {title = "-"})
+    table.insert(menuTable, {
+        title = "Main/Stack +",
+        fn = function() 
+            obj.setMainRatioRelative(0.05)
+            obj.tileCurrentSpace()
+        end})
+    table.insert(menuTable, {
+        title = "Main/Stack -",
+        fn = function() 
+            obj.setMainRatioRelative(-0.05)
+            obj.tileCurrentSpace()
+        end})
+    obj.log.d("< menuTable ->", inspect.inspect(menuTable))
     return menuTable
 end
 
