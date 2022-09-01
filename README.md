@@ -1,7 +1,48 @@
 # TilingWindowManager
 ---
 
-Tiling Window Manager.
+macOS Tiling Window Manager. Spoon on top of Hammerspoon.
+
+Example `~/.hammerspoon/init.lua` configuration:
+
+```
+hs.loadSpoon("TilingWindowManager")
+    :setLogLevel("debug")
+    :bindHotkeys({
+        tile =           {hyper, "t"},
+        incMainRatio =   {hyper, "p"},
+        decMainRatio =   {hyper, "o"},
+        incMainWindows = {hyper, "i"},
+        decMainWindows = {hyper, "u"},
+        focusNext =      {hyper, "k"},
+        focusPrev =      {hyper, "j"},
+        swapNext =       {hyper, "l"},
+        swapPrev =       {hyper, "h"},
+        toggleFirst =    {hyper, "return"},
+        tall =           {hyper, ","},
+        talltwo =        {hyper, "m"},
+        fullscreen =     {hyper, "."},
+        wide =           {hyper, "-"},
+        display =        {hyper, "d"},
+    })
+    :start({
+        menubar = true,
+        dynamic = true,
+        layouts = {
+            spoon.TilingWindowManager.layouts.fullscreen,
+            spoon.TilingWindowManager.layouts.tall,
+            spoon.TilingWindowManager.layouts.talltwo,
+            spoon.TilingWindowManager.layouts.wide,
+            spoon.TilingWindowManager.layouts.floating,
+        },
+        displayLayout = true,
+        floatApps = {
+            "com.apple.systempreferences",
+            "com.apple.ActivityMonitor",
+            "com.apple.Stickies",
+        }
+    })
+```
 
 ## API Overview
 * Variables - Configurable values
