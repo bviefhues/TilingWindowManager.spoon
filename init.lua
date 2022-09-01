@@ -1,6 +1,47 @@
---- === TilingWindowManager.spoon ===
+--- === TilingWindowManager ===
 ---
---- Tiling Window Manager.
+--- macOS Tiling Window Manager. Spoon on top of Hammerspoon.
+---
+--- Example `~/.hammerspoon/init.lua` configuration:
+---
+--- ```
+--- hs.loadSpoon("TilingWindowManager")
+---     :setLogLevel("debug")
+---     :bindHotkeys({
+---         tile =           {hyper, "t"},
+---         incMainRatio =   {hyper, "p"},
+---         decMainRatio =   {hyper, "o"},
+---         incMainWindows = {hyper, "i"},
+---         decMainWindows = {hyper, "u"},
+---         focusNext =      {hyper, "k"},
+---         focusPrev =      {hyper, "j"},
+---         swapNext =       {hyper, "l"},
+---         swapPrev =       {hyper, "h"},
+---         toggleFirst =    {hyper, "return"},
+---         tall =           {hyper, ","},
+---         talltwo =        {hyper, "m"},
+---         fullscreen =     {hyper, "."},
+---         wide =           {hyper, "-"},
+---         display =        {hyper, "d"},
+---     })
+---     :start({
+---         menubar = true,
+---         dynamic = true,
+---         layouts = {
+---             spoon.TilingWindowManager.layouts.fullscreen,
+---             spoon.TilingWindowManager.layouts.tall,
+---             spoon.TilingWindowManager.layouts.talltwo,
+---             spoon.TilingWindowManager.layouts.wide,
+---             spoon.TilingWindowManager.layouts.floating,
+---         },
+---         displayLayout = true,
+---         floatApps = {
+---             "com.apple.systempreferences",
+---             "com.apple.ActivityMonitor",
+---             "com.apple.Stickies",
+---         }
+---     })
+--- ```
 
 local inspect =    require("hs.inspect")
 local window =     require("hs.window")
@@ -23,10 +64,10 @@ obj.license = "MIT - https://opensource.org/licenses/MIT"
 
 -- Variables --------------------------------------------------------
 
---- TilingWindowManager.logger
---- Variable
---- Logger object used within the Spoon. Can be accessed to set 
---- the default log level for the messages coming from the Spoon.
+-- Internal: TilingWindowManager.log
+-- Variable
+-- Logger object used within the Spoon. Can be accessed to set 
+-- the default log level for the messages coming from the Spoon.
 obj.log = hs.logger.new("TilingWindowManager")
 
 -- Internal: TilingWindowManager.menubar
@@ -55,14 +96,15 @@ obj.tilingConfig = {}
 
 --- TilingWindowManager.layouts
 --- Variable
---- A table holding all known tiling layouts. Maps keys to descriptive 
---- strings. The strings show up in the user interface.
+--- A table holding all known tiling layouts. Maps keys to descriptive strings. The strings show up in the user interface.
 ---
+--- Notes: 
 --- The following tiling layouts are defined as Keys:
----  * TilingWindowManager.layouts.floating
----  * TilingWindowManager.layouts.fullscreen
----  * TilingWindowManager.layouts.tall
----  * TilingWindowManager.layouts.wide
+---  * `TilingWindowManager.layouts.floating`
+---  * `TilingWindowManager.layouts.fullscreen`
+---  * `TilingWindowManager.layouts.tall`
+---  * `TilingWindowManager.layouts.wide`
+---  * `TilingWindowManager.layouts.talltwo`
 obj.layouts = {
     floating =   "Floating",
     fullscreen = "Fullscreen",
@@ -77,12 +119,13 @@ obj.layouts = {
 ---
 --- Notes:
 --- Can be set as a config option in the spoons `start()` method.
+--- Default: `TilingWindowManager.layouts.floating`
+
 obj.enabledLayouts = {obj.layouts.floating} 
 
 --- TilingWindowManager.fullscreenRightApps
 --- Variable
---- A table holding names of applications which shall be positioned
---- on right half of screen only for fullscreen layout.
+--- A table holding names of applications which shall be positioned on right half of screen only for fullscreen layout.
 ---
 --- Notes:
 --- Can be set as a config option in the spoons `start()` method.
@@ -90,11 +133,11 @@ obj.fullscreenRightApps = {}
 
 --- TilingWindowManager.floatApps
 --- Variable
---- A table holding names of applications which shall not be tiled.
---- These application's windows are never midified by the spoon.
+--- A table holding bundleID's of applications which shall not be tiled.
 ---
 --- Notes:
---- Can be set as a config option in the spoons `start()` method.
+--- * These application's windows are never modified by the spoon.
+--- * Can be set as a config option in the spoons `start()` method.
 obj.floatApps = {}
 
 --- TilingWindowManager.displayLayoutOnLayoutChange
@@ -112,6 +155,7 @@ obj.displayLayoutOnLayoutChange = false
 --- Variable
 --- A table holding everything necessary for each layout.
 --- 
+--- Notes:
 --- The table key is a tiling layout, as per 
 --- `TilingWindowManager.layouts`.
 --- 
@@ -642,9 +686,7 @@ end
 
 --- TilingWindowManager.focusRelative(relativeIndex) -> nil
 --- Function
---- Change window focus. Newly focussed window is determined by relative 
---- distance `relativeIndex` from current window in orderedtileable 
---- windows table.  Wraps around if current window is first or last window.
+--- Change window focus. 
 ---
 --- Parameters:
 ---  * relativeIndex - positive moves focus next, negative moves
@@ -652,6 +694,12 @@ end
 ---
 --- Returns:
 ---  * None
+---
+--- Notes:
+--- Newly focussed window is determined by relative 
+--- distance `relativeIndex` from current window in ordered tileable 
+--- windows table.  Wraps around if current window is first or last window.
+--- `+1` focuses next window, `-1` focuses previous window.
 function obj.focusRelative(relativeIndex)
     obj.log.d("> focusRelative", relativeIndex)
     local windows = obj.tilingConfigCurrentSpace().windows
@@ -671,9 +719,6 @@ end
 --- TilingWindowManager.moveRelative(relativeIndex) -> nil
 --- Function
 --- Moves window to different position in table of tileable windows.
---- Wraps around if current window is first or last window. 
----
---- Tiles the current space.
 ---
 --- Parameters:
 ---  * relativeIndex - positive moves window next, negative moves
@@ -681,6 +726,10 @@ end
 ---
 --- Returns:
 ---  * None
+---
+--- Notes:
+--- Wraps around if current window is first or last window. 
+--- Tiles the current space.
 function obj.moveRelative(relativeIndex)
     obj.log.d("> moveRelative", relativeIndex)
     local windows = obj.tilingConfigCurrentSpace().windows
@@ -700,20 +749,22 @@ end
 
 --- TilingWindowManager.swapFirst() -> nil
 --- Function
----
---- If current window is first window:
---- Swaps window order and position with second window in tileable windows.
----
---- If current window is not first window:
---- Swaps window order and position with first window in tileable windows.
----
---- Tiles the current space.
+--- Swaps first window.
 ---
 --- Parameters:
 ---  * None
 ---
 --- Returns:
 ---  * None
+---
+--- Notes:
+--- * If current window is first window:
+---   Swaps window order and position with second window in tileable 
+---   windows.
+--- * If current window is not first window:
+---   Swaps window order and position with first window in tileable 
+---   windows.
+--- * Tiles the current space.
 function obj.swapFirst()
     obj.log.d("> swapFirst")
     local windows = obj.tilingConfigCurrentSpace().windows
@@ -735,21 +786,22 @@ end
 
 --- TilingWindowManager.toggleFirst() -> nil
 --- Function
---- 
---- If current window is first window:
---- Swaps window order and position with second window in tileable windows.
----
---- If current window is not first window:
---- Makes current window the first window. Previous first window becomes
---- the second window.
----
---- Tiles the current space.
+--- Toggles first window.
 ---
 --- Parameters:
 ---  * None
 ---
 --- Returns:
 ---  * None
+--- 
+--- Notes:
+--- * If current window is first window:
+---   Swaps window order and position with second window in tileable 
+---   windows.
+--- * If current window is not first window:
+---   Makes current window the first window. Previous first window becomes
+---   the second window.
+--- * Tiles the current space.
 function obj.toggleFirst()
     obj.log.d("> toggleFirst")
     local windows = obj.tilingConfigCurrentSpace().windows
@@ -1025,10 +1077,6 @@ function obj:start(config)
             })
             :subscribe({ 
                 window.filter.windowsChanged,
-                --window.filter.windowMinimized,
-                --window.filter.windowVisible,
-                --window.filter.windowCreated,
-                --window.filter.windowDestroyed,
             }, function(_, _, _) obj.tileCurrentSpace(true) end)
     end
 
