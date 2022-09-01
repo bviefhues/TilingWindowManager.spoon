@@ -10,7 +10,6 @@ Tiling Window Manager.
  * [floatApps](#floatApps)
  * [fullscreenRightApps](#fullscreenRightApps)
  * [layouts](#layouts)
- * [log](#log)
  * [tilingStrategy](#tilingStrategy)
 * Functions - API calls offered directly by the extension
  * [displayLayout](#displayLayout)
@@ -40,39 +39,34 @@ Tiling Window Manager.
 | **Signature**                               | `TilingWindowManager.enabledLayouts`                                                                    |
 | **Type**                                    | Variable                                                                     |
 | **Description**                             | A table holding all enabled tiling layouts.                                                                     |
-| **Notes**                                   | <ul><li>Can be set as a config option in the spoons `start()` method.</li></ul>                |
+| **Notes**                                   | <ul><li>Can be set as a config option in the spoons `start()` method.</li><li>Default: `TilingWindowManager.layouts.floating`</li></ul>                |
 
 | [floatApps](#floatApps)         |                                                                                     |
 | --------------------------------------------|-------------------------------------------------------------------------------------|
 | **Signature**                               | `TilingWindowManager.floatApps`                                                                    |
 | **Type**                                    | Variable                                                                     |
-| **Description**                             | A table holding names of applications which shall not be tiled.                                                                     |
-| **Notes**                                   | <ul><li>Can be set as a config option in the spoons `start()` method.</li></ul>                |
+| **Description**                             | A table holding bundleID's of applications which shall not be tiled.                                                                     |
+| **Notes**                                   | <ul><li>* These application's windows are never modified by the spoon.</li><li>* Can be set as a config option in the spoons `start()` method.</li></ul>                |
 
 | [fullscreenRightApps](#fullscreenRightApps)         |                                                                                     |
 | --------------------------------------------|-------------------------------------------------------------------------------------|
 | **Signature**                               | `TilingWindowManager.fullscreenRightApps`                                                                    |
 | **Type**                                    | Variable                                                                     |
-| **Description**                             | A table holding names of applications which shall be positioned                                                                     |
+| **Description**                             | A table holding names of applications which shall be positioned on right half of screen only for fullscreen layout.                                                                     |
 | **Notes**                                   | <ul><li>Can be set as a config option in the spoons `start()` method.</li></ul>                |
 
 | [layouts](#layouts)         |                                                                                     |
 | --------------------------------------------|-------------------------------------------------------------------------------------|
 | **Signature**                               | `TilingWindowManager.layouts`                                                                    |
 | **Type**                                    | Variable                                                                     |
-| **Description**                             | A table holding all known tiling layouts. Maps keys to descriptive                                                                      |
-
-| [log](#log)         |                                                                                     |
-| --------------------------------------------|-------------------------------------------------------------------------------------|
-| **Signature**                               | `TilingWindowManager.log`                                                                    |
-| **Type**                                    | Variable                                                                     |
-| **Description**                             | Logger object used within the Spoon. Can be accessed to set                                                                      |
+| **Description**                             | A table holding all known tiling layouts. Maps keys to descriptive strings. The strings show up in the user interface.                                                                     |
 
 | [tilingStrategy](#tilingStrategy)         |                                                                                     |
 | --------------------------------------------|-------------------------------------------------------------------------------------|
 | **Signature**                               | `TilingWindowManager.tilingStrategy`                                                                    |
 | **Type**                                    | Variable                                                                     |
 | **Description**                             | A table holding everything necessary for each layout.                                                                     |
+| **Notes**                                   | <ul><li>The table key is a tiling layout, as per </li><li>`TilingWindowManager.layouts`.</li><li></li><li>The table value for each layout is a table with these keys:</li><li>tile(windows) - a function to move windows in place.</li><li>symbol - a string formatted as ASCII image, the layouts icon.</li></ul>                |
 
 ### Functions
 
@@ -89,10 +83,10 @@ Tiling Window Manager.
 | --------------------------------------------|-------------------------------------------------------------------------------------|
 | **Signature**                               | `TilingWindowManager.focusRelative(relativeIndex) -> nil`                                                                    |
 | **Type**                                    | Function                                                                     |
-| **Description**                             | Change window focus. Newly focussed window is determined by relative                                                                      |
+| **Description**                             | Change window focus.                                                                      |
 | **Parameters**                              | <ul><li>relativeIndex - positive moves focus next, negative moves focus previous.</li></ul> |
 | **Returns**                                 | <ul><li>None</li></ul>          |
-| **Notes**                                   | <ul></ul>                |
+| **Notes**                                   | <ul><li>Newly focussed window is determined by relative </li><li>distance `relativeIndex` from current window in ordered tileable </li><li>windows table.  Wraps around if current window is first or last window.</li><li>`+1` focuses next window, `-1` focuses previous window.</li></ul>                |
 
 | [moveRelative](#moveRelative)         |                                                                                     |
 | --------------------------------------------|-------------------------------------------------------------------------------------|
@@ -101,25 +95,25 @@ Tiling Window Manager.
 | **Description**                             | Moves window to different position in table of tileable windows.                                                                     |
 | **Parameters**                              | <ul><li>relativeIndex - positive moves window next, negative moves window previous.</li></ul> |
 | **Returns**                                 | <ul><li>None</li></ul>          |
-| **Notes**                                   | <ul></ul>                |
+| **Notes**                                   | <ul><li>Wraps around if current window is first or last window. </li><li>Tiles the current space.</li></ul>                |
 
 | [swapFirst](#swapFirst)         |                                                                                     |
 | --------------------------------------------|-------------------------------------------------------------------------------------|
 | **Signature**                               | `TilingWindowManager.swapFirst() -> nil`                                                                    |
 | **Type**                                    | Function                                                                     |
-| **Description**                             |                                                                      |
+| **Description**                             | Swaps first window.                                                                     |
 | **Parameters**                              | <ul><li>None</li></ul> |
 | **Returns**                                 | <ul><li>None</li></ul>          |
-| **Notes**                                   | <ul></ul>                |
+| **Notes**                                   | <ul><li>* If current window is first window:</li><li>  Swaps window order and position with second window in tileable </li><li>  windows.</li><li>* If current window is not first window:</li><li>  Swaps window order and position with first window in tileable </li><li>  windows.</li><li>* Tiles the current space.</li></ul>                |
 
 | [toggleFirst](#toggleFirst)         |                                                                                     |
 | --------------------------------------------|-------------------------------------------------------------------------------------|
 | **Signature**                               | `TilingWindowManager.toggleFirst() -> nil`                                                                    |
 | **Type**                                    | Function                                                                     |
-| **Description**                             |                                                                      |
+| **Description**                             | Toggles first window.                                                                     |
 | **Parameters**                              | <ul><li>None</li></ul> |
 | **Returns**                                 | <ul><li>None</li></ul>          |
-| **Notes**                                   | <ul></ul>                |
+| **Notes**                                   | <ul><li>* If current window is first window:</li><li>  Swaps window order and position with second window in tileable </li><li>  windows.</li><li>* If current window is not first window:</li><li>  Makes current window the first window. Previous first window becomes</li><li>  the second window.</li><li>* Tiles the current space.</li></ul>                |
 
 ### Methods
 
