@@ -965,18 +965,18 @@ end
 --- Parameters:
 ---  * mapping - A table containing hotkey modifier/key details for 
 ---    the following items:
----    * tile - Manually tiles the current macOS space.
----    * focusNext - move focus to next window.
----    * focusPrev - move focus to previous window.
----    * swapNext - swap current window with next window.
----    * swapPrev - swap current window with previous window.
----    * swapFirst - swap current window with first window.
----    * toggleFirst - Toggle current window with first window.
----    * float - switch current space to float layout.
----    * fullscreen - switch current space to fullscreen layout.
----    * tall - switch current space to tall layout.
----    * wide - switch current space to wide layout.
----    * display - display current space layout.
+---    - tile - Manually tiles the current macOS space.
+---    - focusNext - move focus to next window.
+---    - focusPrev - move focus to previous window.
+---    - swapNext - swap current window with next window.
+---    - swapPrev - swap current window with previous window.
+---    - swapFirst - swap current window with first window.
+---    - toggleFirst - Toggle current window with first window.
+---    - float - switch current space to float layout.
+---    - fullscreen - switch current space to fullscreen layout.
+---    - tall - switch current space to tall layout.
+---    - wide - switch current space to wide layout.
+---    - display - display current space layout.
 ---
 --- Returns:
 ---  * The TilingWindowManager object
