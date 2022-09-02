@@ -45,12 +45,7 @@ hs.loadSpoon("TilingWindowManager")
 
 ## API Overview
 * Variables - Configurable values
-  * [displayLayoutOnLayoutChange](#displayLayoutOnLayoutChange)
-  * [enabledLayouts](#enabledLayouts)
-  * [floatApps](#floatApps)
-  * [fullscreenRightApps](#fullscreenRightApps)
   * [layouts](#layouts)
-  * [tilingStrategy](#tilingStrategy)
 * Functions - API calls offered directly by the extension
   * [displayLayout](#displayLayout)
   * [focusRelative](#focusRelative)
@@ -67,46 +62,11 @@ hs.loadSpoon("TilingWindowManager")
 
 ### Variables
 
-| [displayLayoutOnLayoutChange](#displayLayoutOnLayoutChange)         |                                                                                     |
-| --------------------------------------------|-------------------------------------------------------------------------------------|
-| **Signature**                               | `TilingWindowManager.displayLayoutOnLayoutChange`                                                                    |
-| **Type**                                    | Variable                                                                     |
-| **Description**                             | If true: show `hs.alert()` with layout name when changing layout.                                                                     |
-| **Notes**                                   | <ul><li>Can be set as a config option in the spoons `start()` method.</li></ul>                |
-
-| [enabledLayouts](#enabledLayouts)         |                                                                                     |
-| --------------------------------------------|-------------------------------------------------------------------------------------|
-| **Signature**                               | `TilingWindowManager.enabledLayouts`                                                                    |
-| **Type**                                    | Variable                                                                     |
-| **Description**                             | A table holding all enabled tiling layouts.                                                                     |
-| **Notes**                                   | <ul><li>Can be set as a config option in the spoons `start()` method.</li><li>Default: `TilingWindowManager.layouts.floating`</li></ul>                |
-
-| [floatApps](#floatApps)         |                                                                                     |
-| --------------------------------------------|-------------------------------------------------------------------------------------|
-| **Signature**                               | `TilingWindowManager.floatApps`                                                                    |
-| **Type**                                    | Variable                                                                     |
-| **Description**                             | A table holding bundleID's of applications which shall not be tiled.                                                                     |
-| **Notes**                                   | <ul><li>* These application's windows are never modified by the spoon.</li><li>* Can be set as a config option in the spoons `start()` method.</li></ul>                |
-
-| [fullscreenRightApps](#fullscreenRightApps)         |                                                                                     |
-| --------------------------------------------|-------------------------------------------------------------------------------------|
-| **Signature**                               | `TilingWindowManager.fullscreenRightApps`                                                                    |
-| **Type**                                    | Variable                                                                     |
-| **Description**                             | A table holding names of applications which shall be positioned on right half of screen only for fullscreen layout.                                                                     |
-| **Notes**                                   | <ul><li>Can be set as a config option in the spoons `start()` method.</li></ul>                |
-
 | [layouts](#layouts)         |                                                                                     |
 | --------------------------------------------|-------------------------------------------------------------------------------------|
 | **Signature**                               | `TilingWindowManager.layouts`                                                                    |
 | **Type**                                    | Variable                                                                     |
 | **Description**                             | A table holding all known tiling layouts. Maps keys to descriptive strings. The strings show up in the user interface.                                                                     |
-
-| [tilingStrategy](#tilingStrategy)         |                                                                                     |
-| --------------------------------------------|-------------------------------------------------------------------------------------|
-| **Signature**                               | `TilingWindowManager.tilingStrategy`                                                                    |
-| **Type**                                    | Variable                                                                     |
-| **Description**                             | A table holding everything necessary for each layout.                                                                     |
-| **Notes**                                   | <ul><li>The table key is a tiling layout, as per </li><li>`TilingWindowManager.layouts`.</li><li></li><li>The table value for each layout is a table with these keys:</li><li>tile(windows) - a function to move windows in place.</li><li>symbol - a string formatted as ASCII image, the layouts icon.</li></ul>                |
 
 ### Functions
 
@@ -144,7 +104,7 @@ hs.loadSpoon("TilingWindowManager")
 | **Description**                             | Swaps first window.                                                                     |
 | **Parameters**                              | <ul><li>None</li></ul> |
 | **Returns**                                 | <ul><li>None</li></ul>          |
-| **Notes**                                   | <ul><li>* If current window is first window:</li><li>  Swaps window order and position with second window in tileable </li><li>  windows.</li><li>* If current window is not first window:</li><li>  Swaps window order and position with first window in tileable </li><li>  windows.</li><li>* Tiles the current space.</li></ul>                |
+| **Notes**                                   | <ul><li>* If current window is first window: Swaps window order and position with second window in tileable windows.</li><li>* If current window is not first window: Swaps window order and position with first window in tileable windows.</li><li>* Tiles the current space.</li></ul>                |
 
 | [toggleFirst](#toggleFirst)         |                                                                                     |
 | --------------------------------------------|-------------------------------------------------------------------------------------|
@@ -153,7 +113,7 @@ hs.loadSpoon("TilingWindowManager")
 | **Description**                             | Toggles first window.                                                                     |
 | **Parameters**                              | <ul><li>None</li></ul> |
 | **Returns**                                 | <ul><li>None</li></ul>          |
-| **Notes**                                   | <ul><li>* If current window is first window:</li><li>  Swaps window order and position with second window in tileable </li><li>  windows.</li><li>* If current window is not first window:</li><li>  Makes current window the first window. Previous first window becomes</li><li>  the second window.</li><li>* Tiles the current space.</li></ul>                |
+| **Notes**                                   | <ul><li>* If current window is first window: Swaps window order and position with second window in tileable windows.</li><li>* If current window is not first window: Makes current window the first window. Previous first window becomes the second window.</li><li>* Tiles the current space.</li></ul>                |
 
 ### Methods
 

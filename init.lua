@@ -113,55 +113,55 @@ obj.layouts = {
     talltwo =    "Tall Two Pane"
 }
 
---- TilingWindowManager.enabledLayouts
---- Variable
---- A table holding all enabled tiling layouts.
----
---- Notes:
---- Can be set as a config option in the spoons `start()` method.
---- Default: `TilingWindowManager.layouts.floating`
+-- TilingWindowManager.enabledLayouts
+-- Variable
+-- A table holding all enabled tiling layouts.
+--
+-- Notes:
+-- Can be set as a config option in the spoons `start()` method.
+-- Default: `TilingWindowManager.layouts.floating`
 
 obj.enabledLayouts = {obj.layouts.floating} 
 
---- TilingWindowManager.fullscreenRightApps
---- Variable
---- A table holding names of applications which shall be positioned on right half of screen only for fullscreen layout.
----
---- Notes:
---- Can be set as a config option in the spoons `start()` method.
+-- TilingWindowManager.fullscreenRightApps
+-- Variable
+-- A table holding names of applications which shall be positioned on right half of screen only for fullscreen layout.
+--
+-- Notes:
+-- Can be set as a config option in the spoons `start()` method.
 obj.fullscreenRightApps = {}
 
---- TilingWindowManager.floatApps
---- Variable
---- A table holding bundleID's of applications which shall not be tiled.
----
---- Notes:
---- * These application's windows are never modified by the spoon.
---- * Can be set as a config option in the spoons `start()` method.
+-- TilingWindowManager.floatApps
+-- Variable
+-- A table holding bundleID's of applications which shall not be tiled.
+--
+-- Notes:
+-- * These application's windows are never modified by the spoon.
+-- * Can be set as a config option in the spoons `start()` method.
 obj.floatApps = {}
 
---- TilingWindowManager.displayLayoutOnLayoutChange
---- Variable
---- If true: show `hs.alert()` with layout name when changing layout.
----
---- Notes:
---- Can be set as a config option in the spoons `start()` method.
+-- TilingWindowManager.displayLayoutOnLayoutChange
+-- Variable
+-- If true: show `hs.alert()` with layout name when changing layout.
+--
+-- Notes:
+-- Can be set as a config option in the spoons `start()` method.
 obj.displayLayoutOnLayoutChange = false
 
 
 -- Tiling strategy --------------------------------------------------
 
---- TilingWindowManager.tilingStrategy
---- Variable
---- A table holding everything necessary for each layout.
---- 
---- Notes:
---- The table key is a tiling layout, as per 
---- `TilingWindowManager.layouts`.
---- 
---- The table value for each layout is a table with these keys:
----  * tile(windows) - a function to move windows in place.
----  * symbol - a string formatted as ASCII image, the layouts icon.
+-- TilingWindowManager.tilingStrategy
+-- Variable
+-- A table holding everything necessary for each layout.
+-- 
+-- Notes:
+-- The table key is a tiling layout, as per 
+-- `TilingWindowManager.layouts`.
+-- 
+-- The table value for each layout is a table with these keys:
+--  * tile(windows) - a function to move windows in place.
+--  * symbol - a string formatted as ASCII image, the layouts icon.
 obj.tilingStrategy = {}
 
 obj.tilingStrategy[obj.layouts.floating] = {
@@ -758,12 +758,8 @@ end
 ---  * None
 ---
 --- Notes:
---- * If current window is first window:
----   Swaps window order and position with second window in tileable 
----   windows.
---- * If current window is not first window:
----   Swaps window order and position with first window in tileable 
----   windows.
+--- * If current window is first window: Swaps window order and position with second window in tileable windows.
+--- * If current window is not first window: Swaps window order and position with first window in tileable windows.
 --- * Tiles the current space.
 function obj.swapFirst()
     obj.log.d("> swapFirst")
@@ -795,12 +791,8 @@ end
 ---  * None
 --- 
 --- Notes:
---- * If current window is first window:
----   Swaps window order and position with second window in tileable 
----   windows.
---- * If current window is not first window:
----   Makes current window the first window. Previous first window becomes
----   the second window.
+--- * If current window is first window: Swaps window order and position with second window in tileable windows.
+--- * If current window is not first window: Makes current window the first window. Previous first window becomes the second window.
 --- * Tiles the current space.
 function obj.toggleFirst()
     obj.log.d("> toggleFirst")
@@ -973,18 +965,18 @@ end
 --- Parameters:
 ---  * mapping - A table containing hotkey modifier/key details for 
 ---    the following items:
----   * tile - Manually tiles the current macOS space.
----   * focusNext - move focus to next window.
----   * focusPrev - move focus to previous window.
----   * swapNext - swap current window with next window.
----   * swapPrev - swap current window with previous window.
----   * swapFirst - swap current window with first window.
----   * toggleFirst - Toggle current window with first window.
----   * float - switch current space to float layout.
----   * fullscreen - switch current space to fullscreen layout.
----   * tall - switch current space to tall layout.
----   * wide - switch current space to wide layout.
----   * display - display current space layout.
+---    * tile - Manually tiles the current macOS space.
+---    * focusNext - move focus to next window.
+---    * focusPrev - move focus to previous window.
+---    * swapNext - swap current window with next window.
+---    * swapPrev - swap current window with previous window.
+---    * swapFirst - swap current window with first window.
+---    * toggleFirst - Toggle current window with first window.
+---    * float - switch current space to float layout.
+---    * fullscreen - switch current space to fullscreen layout.
+---    * tall - switch current space to tall layout.
+---    * wide - switch current space to wide layout.
+---    * display - display current space layout.
 ---
 --- Returns:
 ---  * The TilingWindowManager object
