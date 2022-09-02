@@ -46,23 +46,23 @@ hs.loadSpoon("TilingWindowManager")
 
 ## API Overview
 * Variables - Configurable values
- * [displayLayoutOnLayoutChange](#displayLayoutOnLayoutChange)
- * [enabledLayouts](#enabledLayouts)
- * [floatApps](#floatApps)
- * [fullscreenRightApps](#fullscreenRightApps)
- * [layouts](#layouts)
- * [tilingStrategy](#tilingStrategy)
+  * [displayLayoutOnLayoutChange](#displayLayoutOnLayoutChange)
+  * [enabledLayouts](#enabledLayouts)
+  * [floatApps](#floatApps)
+  * [fullscreenRightApps](#fullscreenRightApps)
+  * [layouts](#layouts)
+  * [tilingStrategy](#tilingStrategy)
 * Functions - API calls offered directly by the extension
- * [displayLayout](#displayLayout)
- * [focusRelative](#focusRelative)
- * [moveRelative](#moveRelative)
- * [swapFirst](#swapFirst)
- * [toggleFirst](#toggleFirst)
+  * [displayLayout](#displayLayout)
+  * [focusRelative](#focusRelative)
+  * [moveRelative](#moveRelative)
+  * [swapFirst](#swapFirst)
+  * [toggleFirst](#toggleFirst)
 * Methods - API calls which can only be made on an object returned by a constructor
- * [bindHotkeys](#bindHotkeys)
- * [setLogLevel](#setLogLevel)
- * [start](#start)
- * [stop](#stop)
+  * [bindHotkeys](#bindHotkeys)
+  * [setLogLevel](#setLogLevel)
+  * [start](#start)
+  * [stop](#stop)
 
 ## API Documentation
 
