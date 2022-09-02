@@ -86,7 +86,7 @@ hs.loadSpoon("TilingWindowManager")
 | **Description**                             | Change window focus.                                                                      |
 | **Parameters**                              | <ul><li>relativeIndex - positive moves focus next, negative moves focus previous.</li></ul> |
 | **Returns**                                 | <ul><li>None</li></ul>          |
-| **Notes**                                   | <ul><li>Newly focussed window is determined by relative </li><li>distance `relativeIndex` from current window in ordered tileable </li><li>windows table.  Wraps around if current window is first or last window.</li><li>`+1` focuses next window, `-1` focuses previous window.</li></ul>                |
+| **Notes**                                   | <ul><li>Newly focussed window is determined by relative distance `relativeIndex` from current window in ordered tileable windows table.  Wraps around if current window is first or last window.</li><li>`+1` focuses next window, `-1` focuses previous window.</li></ul>                |
 
 | [moveRelative](#moveRelative)         |                                                                                     |
 | --------------------------------------------|-------------------------------------------------------------------------------------|
@@ -104,7 +104,7 @@ hs.loadSpoon("TilingWindowManager")
 | **Description**                             | Swaps first window.                                                                     |
 | **Parameters**                              | <ul><li>None</li></ul> |
 | **Returns**                                 | <ul><li>None</li></ul>          |
-| **Notes**                                   | <ul><li>* If current window is first window: Swaps window order and position with second window in tileable windows.</li><li>* If current window is not first window: Swaps window order and position with first window in tileable windows.</li><li>* Tiles the current space.</li></ul>                |
+| **Notes**                                   | <ul><li>If current window is first window: Swaps window order and position with second window in tileable windows.</li><li>If current window is not first window: Swaps window order and position with first window in tileable windows.</li><li>Tiles the current space.</li></ul>                |
 
 | [toggleFirst](#toggleFirst)         |                                                                                     |
 | --------------------------------------------|-------------------------------------------------------------------------------------|
@@ -113,7 +113,7 @@ hs.loadSpoon("TilingWindowManager")
 | **Description**                             | Toggles first window.                                                                     |
 | **Parameters**                              | <ul><li>None</li></ul> |
 | **Returns**                                 | <ul><li>None</li></ul>          |
-| **Notes**                                   | <ul><li>* If current window is first window: Swaps window order and position with second window in tileable windows.</li><li>* If current window is not first window: Makes current window the first window. Previous first window becomes the second window.</li><li>* Tiles the current space.</li></ul>                |
+| **Notes**                                   | <ul><li>If current window is first window: Swaps window order and position with second window in tileable windows.</li><li>If current window is not first window: Makes current window the first window. Previous first window becomes the second window.</li><li> *Tiles the current space.</li></ul>                |
 
 ### Methods
 
@@ -124,7 +124,7 @@ hs.loadSpoon("TilingWindowManager")
 | **Description**                             | Binds hotkeys for TilingWindowManager                                                                     |
 | **Parameters**                              | <ul><li>mapping - A table containing hotkey modifier/key details for the following items</li></ul> |
 | **Returns**                                 | <ul><li>The TilingWindowManager object</li></ul>          |
-| **Notes**                                   | <ul><li>Keys for mapping:</li><li>tile - Manually tiles the current macOS space.</li><li>focusNext - move focus to next window.</li><li>focusPrev - move focus to previous window.</li><li>swapNext - swap current window with next window.</li><li>swapPrev - swap current window with previous window.</li><li>swapFirst - swap current window with first window.</li><li>toggleFirst - Toggle current window with first window.</li><li>float - switch current space to float layout.</li><li>fullscreen - switch current space to fullscreen layout.</li><li>tall - switch current space to tall layout.</li><li>wide - switch current space to wide layout.</li><li>display - display current space layout.</li></ul>                |
+| **Notes**                                   | <ul><li>Keys for mapping:</li><li>   - tile - Manually tiles the current macOS space.</li><li>   - focusNext - move focus to next window.</li><li>   - focusPrev - move focus to previous window.</li><li>   - swapNext - swap current window with next window.</li><li>   - swapPrev - swap current window with previous window.</li><li>   - swapFirst - swap current window with first window.</li><li>   - toggleFirst - Toggle current window with first window.</li><li>   - float - switch current space to float layout.</li><li>   - fullscreen - switch current space to fullscreen layout.</li><li>   - tall - switch current space to tall layout.</li><li>   - wide - switch current space to wide layout.</li><li>   - display - display current space layout.</li></ul>                |
 
 | [setLogLevel](#setLogLevel)         |                                                                                     |
 | --------------------------------------------|-------------------------------------------------------------------------------------|

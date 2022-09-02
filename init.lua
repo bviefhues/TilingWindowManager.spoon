@@ -97,14 +97,6 @@ obj.tilingConfig = {}
 --- TilingWindowManager.layouts
 --- Variable
 --- A table holding all known tiling layouts. Maps keys to descriptive strings. The strings show up in the user interface.
----
---- Notes: 
---- The following tiling layouts are defined as Keys:
----  * `TilingWindowManager.layouts.floating`
----  * `TilingWindowManager.layouts.fullscreen`
----  * `TilingWindowManager.layouts.tall`
----  * `TilingWindowManager.layouts.wide`
----  * `TilingWindowManager.layouts.talltwo`
 obj.layouts = {
     floating =   "Floating",
     fullscreen = "Fullscreen",
@@ -696,9 +688,7 @@ end
 ---  * None
 ---
 --- Notes:
---- Newly focussed window is determined by relative 
---- distance `relativeIndex` from current window in ordered tileable 
---- windows table.  Wraps around if current window is first or last window.
+--- Newly focussed window is determined by relative distance `relativeIndex` from current window in ordered tileable windows table.  Wraps around if current window is first or last window.
 --- `+1` focuses next window, `-1` focuses previous window.
 function obj.focusRelative(relativeIndex)
     obj.log.d("> focusRelative", relativeIndex)
@@ -758,9 +748,9 @@ end
 ---  * None
 ---
 --- Notes:
---- * If current window is first window: Swaps window order and position with second window in tileable windows.
---- * If current window is not first window: Swaps window order and position with first window in tileable windows.
---- * Tiles the current space.
+--- If current window is first window: Swaps window order and position with second window in tileable windows.
+--- If current window is not first window: Swaps window order and position with first window in tileable windows.
+--- Tiles the current space.
 function obj.swapFirst()
     obj.log.d("> swapFirst")
     local windows = obj.tilingConfigCurrentSpace().windows
@@ -791,9 +781,9 @@ end
 ---  * None
 --- 
 --- Notes:
---- * If current window is first window: Swaps window order and position with second window in tileable windows.
---- * If current window is not first window: Makes current window the first window. Previous first window becomes the second window.
---- * Tiles the current space.
+---  * If current window is first window: Swaps window order and position with second window in tileable windows.
+---  * If current window is not first window: Makes current window the first window. Previous first window becomes the second window.
+---  *Tiles the current space.
 function obj.toggleFirst()
     obj.log.d("> toggleFirst")
     local windows = obj.tilingConfigCurrentSpace().windows
@@ -967,19 +957,19 @@ end
 ---    the following items
 ---
 --- Notes:
---- Keys for mapping:
----  * tile - Manually tiles the current macOS space.
----  * focusNext - move focus to next window.
----  * focusPrev - move focus to previous window.
----  * swapNext - swap current window with next window.
----  * swapPrev - swap current window with previous window.
----  * swapFirst - swap current window with first window.
----  * toggleFirst - Toggle current window with first window.
----  * float - switch current space to float layout.
----  * fullscreen - switch current space to fullscreen layout.
----  * tall - switch current space to tall layout.
----  * wide - switch current space to wide layout.
----  * display - display current space layout.
+---  * Keys for mapping:
+---    - tile - Manually tiles the current macOS space.
+---    - focusNext - move focus to next window.
+---    - focusPrev - move focus to previous window.
+---    - swapNext - swap current window with next window.
+---    - swapPrev - swap current window with previous window.
+---    - swapFirst - swap current window with first window.
+---    - toggleFirst - Toggle current window with first window.
+---    - float - switch current space to float layout.
+---    - fullscreen - switch current space to fullscreen layout.
+---    - tall - switch current space to tall layout.
+---    - wide - switch current space to wide layout.
+---    - display - display current space layout.
 ---
 --- Returns:
 ---  * The TilingWindowManager object
