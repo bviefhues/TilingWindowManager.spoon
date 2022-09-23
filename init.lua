@@ -588,14 +588,23 @@ function obj.tilingConfigCurrentSpace(evalWindows)
         local visibleWindows = fnutils.filter(hs.window.orderedWindows(), 
             -- ordered windows to pick backmost window for tilingConfig
             function(w) 
-                return (
-                    w:isVisible() 
-                    and w:isStandard() 
-                    and (not w:isMinimized())
-                    -- only windows on current screen, otherwise will
-                    -- mingle windows from all screens
-                    and w:screen() == hs.window.focusedWindow():screen()
-                )
+                local focusedWindow = hs.window.focusedWindow()
+                if focusedWindow then
+                    return (
+                        w:isVisible() 
+                        and w:isStandard() 
+                        and (not w:isMinimized())
+                        -- only windows on current screen, otherwise will
+                        -- mingle windows from all screens
+                        and w:screen() == focusedWindow:screen()
+                    )
+                else
+                    return (
+                        w:isVisible() 
+                        and w:isStandard() 
+                        and (not w:isMinimized())
+                    )
+                end
             end)
 
         -- filter window config for currently visible windows only
