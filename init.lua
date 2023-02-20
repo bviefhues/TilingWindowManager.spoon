@@ -757,9 +757,9 @@ end
 ---  * None
 ---
 --- Notes:
---- If current window is first window: Swaps window order and position with second window in tileable windows.
---- If current window is not first window: Swaps window order and position with first window in tileable windows.
---- Tiles the current space.
+---  * If current window is first window: Swaps window order and position with second window in tileable windows.
+---  * If current window is not first window: Swaps window order and position with first window in tileable windows.
+---  * Tiles the current space.
 function obj.swapFirst()
     obj.log.d("> swapFirst")
     local windows = obj.tilingConfigCurrentSpace().windows
@@ -792,7 +792,7 @@ end
 --- Notes:
 ---  * If current window is first window: Swaps window order and position with second window in tileable windows.
 ---  * If current window is not first window: Makes current window the first window. Previous first window becomes the second window.
----  *Tiles the current space.
+---  * Tiles the current space.
 function obj.toggleFirst()
     obj.log.d("> toggleFirst")
     local windows = obj.tilingConfigCurrentSpace().windows
@@ -810,6 +810,28 @@ function obj.toggleFirst()
         end
     end
     obj.log.d("< toggleFirst")
+end
+
+--- TilingWindowManager.toggleFirstMouseHover() -> nil
+--- Function
+--- Focuses and raises window under mouse pointer, then calls toogleFirst().
+---
+--- Parameters:
+---  * None
+---
+--- Returns:
+---  * None
+function obj.toggleFirstMouseHover()
+    obj.log.d("> toggleFirstMouseHover")
+    local windows = obj.tilingConfigCurrentSpace().windows
+    local point = hs.mouse.absolutePosition()
+    for i, w in ipairs(windows) do
+        if hs.geometry.point(point.x, point.y):inside(w:frame()) then
+            w:focus():raise()
+        end
+    end
+    obj.toggleFirst()
+    obj.log.d("< toggleFirstMouseHover")
 end
 
 
@@ -1012,6 +1034,7 @@ function obj:bindHotkeys(mapping)
             end,
         swapFirst = obj.swapFirst,
         toggleFirst = obj.toggleFirst,
+        toggleFirstMouseHover = obj.toggleFirstMouseHover,
         float = function()
             obj.setLayoutCurrentSpace(obj.layouts.float)
         end,
@@ -1097,6 +1120,10 @@ function obj:start(config)
         obj.switchedToSpace):start()
 
     obj.tileCurrentSpace(true)
+
+    
+    local ret = dofile(hs.spoons.resourcePath("test_dofile.lua"))
+    obj.log.d(ret)
 
     obj.log.d("< start")
     return self
