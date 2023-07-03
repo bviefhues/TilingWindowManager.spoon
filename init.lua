@@ -416,27 +416,58 @@ end
 --  * none
 function obj.loadTilingConfig()
     obj.log.d("> loadTilingConfig")
-    local allSpaces = {} -- to deflate screens and prepare lookup 
-    for screen, spaces in pairs(hs.spaces.allSpaces()) do
+    local allSpaces = {}
+    local mySpaces = {} -- to deflate screens and prepare lookup 
+    local status
+    local ret
+    local i
+
+    -- hs.spaces.allSpaces() may throw a runtime error if this code runs 
+    -- during boot, i.e. Hammerspoon starts when the UI is not fully
+    -- initialized. Catch error and retry
+    for i = 5, 1, -1 do -- try 5 times
+        status, ret = pcall(hs.spaces.allSpaces)
+        if status then
+            allSpaces = ret
+            break -- allSpaces() returned good
+        else
+            obj.log.d("hs.spaces.allSpaces() error: " .. ret)
+            if i > 1 then
+                obj.log.d("Sleeping 1 sec")
+                hs.timer.usleep(1000 * 1000) -- block and wait for UI
+            end
+        end
+    end
+
+    -- flatten allSpaces return structure to flat table
+    for screen, spaces in pairs(allSpaces) do
         for k, space in pairs(spaces) do
-            allSpaces[tostring(space)] = true 
+            local spaceName = tostring(space)
+            mySpaces[spaceName] = true
+            obj.log.d("Found macOS space: " .. spaceName)
         end
     end
 
     local settingsData = settings.get(obj.name)
 
-    for space, config in pairs(settingsData) do
-        if obj.tilingConfig[space] == nil then -- is not known
-            if allSpaces[space] ~= nil then -- is actually a current space
-                --  start with known clean config
-                obj.tilingConfig[space] = obj.initTilingConfig()
-                -- overwrite loaded config parameters
-                for k, v in pairs(config) do
-                    obj.tilingConfig[space][k] = v
+    if mySpaces and settingsData then
+        for space, config in pairs(settingsData) do
+            obj.log.d("Loading settings for space: " .. space)
+            if obj.tilingConfig[space] == nil then -- is not known
+                if mySpaces[space] ~= nil then -- is actually a currently existing space
+                    --  start with known clean config
+                    obj.tilingConfig[space] = obj.initTilingConfig()
+                    -- overwrite loaded config parameters
+                    for k, v in pairs(config) do
+                        obj.tilingConfig[space][k] = v
+                    end
                 end
             end
         end
+    else
+        obj.log.d("No config loaded or no spaces found")
     end
+
     obj.log.d("< loadTilingConfig")
 end
 
